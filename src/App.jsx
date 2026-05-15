@@ -326,6 +326,18 @@ textDim: "#5d7f93",
 
 const priorityColors = { high: C.alpenglow, medium: C.gold, low: C.pineSoft };
 
+// Strip trailing time ranges (e.g. "Ketchikan, AK  7AM–3PM") so Apple Maps
+// gets a clean query, and build a universal maps.apple.com URL that opens
+// the Apple Maps app on iOS/macOS and the web preview elsewhere.
+function appleMapsUrl(location) {
+  if (!location) return null;
+  const cleaned = location
+    .replace(/\s+\d{1,2}(:\d{2})?\s*(AM|PM)\s*[–-]\s*\d{1,2}(:\d{2})?\s*(AM|PM)/i, "")
+    .replace(/\s+\d{1,2}(:\d{2})?\s*[–-]\s*\d{1,2}(:\d{2})?\s*(AM|PM)/i, "")
+    .trim();
+  return `https://maps.apple.com/?q=${encodeURIComponent(cleaned)}`;
+}
+
 // ─── SVG: Layered mountain range with snow caps & alpenglow sky ───
 function MountainHeader() {
 return (
@@ -972,7 +984,22 @@ filter: "blur(50px)",
                       overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       letterSpacing: "0.5px",
                     }}>
-                      {day.location}
+                      {day.location && (
+                        <a
+                          href={appleMapsUrl(day.location)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          style={{
+                            color: C.iceBlue,
+                            textDecoration: "underline",
+                            textDecorationColor: `${C.iceBlue}55`,
+                            textUnderlineOffset: "2px",
+                          }}
+                        >
+                          {day.location}
+                        </a>
+                      )}
                       {day.weather && (
                         <span style={{ marginLeft: "8px", color: C.alpenglowSoft, fontFamily: fontDisplay }}>
                           {day.weather.icon} {day.weather.hi}°/{day.weather.lo}°
