@@ -340,18 +340,77 @@ function appleMapsUrl(location) {
 
 const STREET_ADDRESS_RE = /\b\d+\s+(?:[A-Z][A-Za-z.'-]*\s+){1,4}(?:St|Street|Ave|Avenue|Blvd|Boulevard|Rd|Road|Dr|Drive|Pl|Place|Hwy|Highway|Ln|Lane|Way|Pkwy|Parkway|Ct|Court|Sq|Square|Terr|Terrace|Cir|Circle)(?:,\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?)?\b/g;
 
-// Split a string into text + Apple Maps links wherever a street address appears.
+// Named destinations referenced in TRIP_DATA items. Multi-word names go
+// before their shorter forms so the longest match wins when both apply.
+const PLACE_NAMES = [
+  "Executive Hotel Le Soleil",
+  "Sitka National Historical Park",
+  "Forbidden Peak Brewery",
+  "Shrine of St. Therese",
+  "Denali Viewpoint South",
+  "St. Michael's Cathedral",
+  "Fortress of the Bear",
+  "Grande Denali Lodge",
+  "Healy River Airport",
+  "Horseshoe Lake Trail",
+  "Outer Point Loop",
+  "Savage River Loop",
+  "Perseverance Trail",
+  "Mendenhall Glacier",
+  "Disenchantment Bay",
+  "Granville Island",
+  "Whittier Tunnel",
+  "Hubbard Glacier",
+  "Horseshoe Lake",
+  "Point Bridget",
+  "Stanley Park",
+  "Nugget Falls",
+  "Creek Street",
+  "Canada Place",
+  "Eagle Beach",
+  "Ruth Glacier",
+  "Riley Creek",
+  "Broad Pass",
+  "Talkeetna",
+  "Hoonah",
+];
+
+const PLACE_RE = new RegExp(
+  "\\b(?:" + PLACE_NAMES.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") + ")\\b",
+  "g"
+);
+
+// Split a string into text + Apple Maps links wherever a street address or
+// known destination appears. Longest match wins; overlaps are dropped.
 function linkifyAddresses(text, linkColor) {
   if (!text) return text;
-  const parts = [];
-  let last = 0;
+  const found = [];
   STREET_ADDRESS_RE.lastIndex = 0;
   for (let m; (m = STREET_ADDRESS_RE.exec(text)); ) {
-    if (m.index > last) parts.push(text.slice(last, m.index));
+    found.push({ index: m.index, value: m[0] });
+  }
+  PLACE_RE.lastIndex = 0;
+  for (let m; (m = PLACE_RE.exec(text)); ) {
+    found.push({ index: m.index, value: m[0] });
+  }
+  if (!found.length) return text;
+  found.sort((a, b) => a.index - b.index || b.value.length - a.value.length);
+  const hits = [];
+  let cursor = 0;
+  for (const f of found) {
+    if (f.index >= cursor) {
+      hits.push(f);
+      cursor = f.index + f.value.length;
+    }
+  }
+  const parts = [];
+  let last = 0;
+  hits.forEach((h, i) => {
+    if (h.index > last) parts.push(text.slice(last, h.index));
     parts.push(
       <a
-        key={`a-${m.index}`}
-        href={appleMapsUrl(m[0])}
+        key={`a-${i}-${h.index}`}
+        href={appleMapsUrl(h.value)}
         target="_blank"
         rel="noopener noreferrer"
         style={{
@@ -361,12 +420,11 @@ function linkifyAddresses(text, linkColor) {
           textUnderlineOffset: "2px",
         }}
       >
-        {m[0]}
+        {h.value}
       </a>
     );
-    last = m.index + m[0].length;
-  }
-  if (last === 0) return text;
+    last = h.index + h.value.length;
+  });
   if (last < text.length) parts.push(text.slice(last));
   return parts;
 }
