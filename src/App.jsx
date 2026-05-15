@@ -306,25 +306,83 @@ todos: [
 };
 
 // ─── Color tokens ─────────────────────────────────────────
-const C = {
-midnight: "#08151f",
-deepFjord: "#0e2435",
-fjord: "#143049",
-glacier: "#3d7993",
-iceBlue: "#9fc4d4",
-mist: "#d8e6ec",
-snow: "#f1f6f9",
-pineDeep: "#1a3025",
-pineSoft: "#5a8a6b",
-alpenglow: "#ed9874",
-alpenglowSoft: "#f4b89a",
-gold: "#e9c178",
-stone: "#6b8090",
-textMuted: "#8fb0c2",
-textDim: "#5d7f93",
+// Two semantic palettes share the same token names so every `C.x` reference
+// stays valid in either theme. `midnight`/`deepFjord`/`fjord` are always
+// "background-ish", `snow` is always "primary text", etc.
+const DARK_PALETTE = {
+  midnight: "#08151f",
+  deepFjord: "#0e2435",
+  fjord: "#143049",
+  glacier: "#3d7993",
+  iceBlue: "#9fc4d4",
+  mist: "#d8e6ec",
+  snow: "#f1f6f9",
+  pineDeep: "#1a3025",
+  pineSoft: "#5a8a6b",
+  alpenglow: "#ed9874",
+  alpenglowSoft: "#f4b89a",
+  gold: "#e9c178",
+  stone: "#6b8090",
+  textMuted: "#8fb0c2",
+  textDim: "#5d7f93",
 };
 
-const priorityColors = { high: C.alpenglow, medium: C.gold, low: C.pineSoft };
+const LIGHT_PALETTE = {
+  midnight: "#eef4f8",
+  deepFjord: "#dde8ef",
+  fjord: "#c5d6e1",
+  glacier: "#3d7993",
+  iceBlue: "#2a5970",
+  mist: "#3d556a",
+  snow: "#0c1a26",
+  pineDeep: "#c8d9c9",
+  pineSoft: "#3d6048",
+  alpenglow: "#b95a32",
+  alpenglowSoft: "#8c4423",
+  gold: "#8e6b1c",
+  stone: "#506578",
+  textMuted: "#4a6478",
+  textDim: "#5a7587",
+};
+
+// Resolve initial palette synchronously so first render matches system.
+function detectInitialPalette() {
+  if (typeof window === "undefined" || !window.matchMedia) return DARK_PALETTE;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? DARK_PALETTE
+    : LIGHT_PALETTE;
+}
+
+let activePalette = detectInitialPalette();
+
+// Proxy so every `C.x` access reads the current palette. Inline styles
+// re-evaluate on each render, so swapping `activePalette` + a re-render
+// flips the whole UI.
+const C = new Proxy(
+  {},
+  {
+    get(_, key) {
+      return activePalette[key];
+    },
+    ownKeys() {
+      return Reflect.ownKeys(activePalette);
+    },
+    getOwnPropertyDescriptor(_, key) {
+      return {
+        enumerable: true,
+        configurable: true,
+        value: activePalette[key],
+      };
+    },
+  }
+);
+
+// Use getters so priority colors stay live across theme changes.
+const priorityColors = {
+  get high() { return C.alpenglow; },
+  get medium() { return C.gold; },
+  get low() { return C.pineSoft; },
+};
 
 // Strip trailing time ranges (e.g. "Ketchikan, AK  7AM–3PM") so Apple Maps
 // gets a clean query, and build a universal maps.apple.com URL that opens
@@ -799,13 +857,46 @@ function ParkConditionsCard({ accent, fontDisplay }) {
   );
 }
 
+// Tracks system light/dark preference and keeps `activePalette` in sync.
+// Mutating the module-level palette synchronously with setState ensures the
+// re-render below already sees the new colors via the `C` proxy.
+function useSystemTheme() {
+  const [theme, setTheme] = useState(() =>
+    activePalette === DARK_PALETTE ? "dark" : "light"
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = (matches) => {
+      activePalette = matches ? DARK_PALETTE : LIGHT_PALETTE;
+      setTheme(matches ? "dark" : "light");
+    };
+    // Re-sync in case the preference changed between module load and mount.
+    apply(mq.matches);
+    const handler = (e) => apply(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  return theme;
+}
+
 export default function AlaskaTripPlanner() {
+const theme = useSystemTheme();
 const [activeSection, setActiveSection] = useState("cruise");
 const [activeTab, setActiveTab] = useState("itinerary");
 const [todos, setTodos] = useState(TRIP_DATA.todos);
 const [expandedDay, setExpandedDay] = useState(null);
 const [showCosts, setShowCosts] = useState(false);
 const [lightbox, setLightbox] = useState(null); // { photos: [keys], index: number }
+
+// Hint the browser so native UI (scrollbars, form controls, default canvas)
+// matches the active palette.
+useEffect(() => {
+  if (typeof document === "undefined") return;
+  document.documentElement.style.colorScheme = theme;
+}, [theme]);
 
 // Keyboard navigation while lightbox is open
 useEffect(() => {
