@@ -338,6 +338,39 @@ function appleMapsUrl(location) {
   return `https://maps.apple.com/?q=${encodeURIComponent(cleaned)}`;
 }
 
+const STREET_ADDRESS_RE = /\b\d+\s+(?:[A-Z][A-Za-z.'-]*\s+){1,4}(?:St|Street|Ave|Avenue|Blvd|Boulevard|Rd|Road|Dr|Drive|Pl|Place|Hwy|Highway|Ln|Lane|Way|Pkwy|Parkway|Ct|Court|Sq|Square|Terr|Terrace|Cir|Circle)(?:,\s+[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?)?\b/g;
+
+// Split a string into text + Apple Maps links wherever a street address appears.
+function linkifyAddresses(text, linkColor) {
+  if (!text) return text;
+  const parts = [];
+  let last = 0;
+  STREET_ADDRESS_RE.lastIndex = 0;
+  for (let m; (m = STREET_ADDRESS_RE.exec(text)); ) {
+    if (m.index > last) parts.push(text.slice(last, m.index));
+    parts.push(
+      <a
+        key={`a-${m.index}`}
+        href={appleMapsUrl(m[0])}
+        target="_blank"
+        rel="noopener noreferrer"
+        style={{
+          color: linkColor,
+          textDecoration: "underline",
+          textDecorationColor: `${linkColor}55`,
+          textUnderlineOffset: "2px",
+        }}
+      >
+        {m[0]}
+      </a>
+    );
+    last = m.index + m[0].length;
+  }
+  if (last === 0) return text;
+  if (last < text.length) parts.push(text.slice(last));
+  return parts;
+}
+
 // ─── SVG: Layered mountain range with snow caps & alpenglow sky ───
 function MountainHeader() {
 return (
@@ -1183,7 +1216,7 @@ filter: "blur(50px)",
                         alignItems: "flex-start", lineHeight: 1.45,
                       }}>
                         <span style={{ color: section.accent, flexShrink: 0, marginTop: "2px", fontSize: "10px" }}>◆</span>
-                        <span>{item}</span>
+                        <span>{linkifyAddresses(item, C.iceBlue)}</span>
                       </div>
                     ))}
                   </div>
