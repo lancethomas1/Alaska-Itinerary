@@ -1385,16 +1385,16 @@ filter: "blur(50px)",
             return (
               <div key={cat} style={{ marginBottom: "22px" }}>
                 <div style={{
-                  background: `linear-gradient(180deg, ${sec.color}ee 0%, ${C.deepFjord}cc 100%)`,
+                  background: sec.color,
                   borderTop: `2px solid ${sec.accent}`,
                   padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px",
                 }}>
                   <span style={{ fontSize: "20px" }}>{sec.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: fontDisplay, fontSize: "15px", color: C.snow, fontStyle: "italic", letterSpacing: "0.5px" }}>
+                    <div style={{ fontFamily: fontDisplay, fontSize: "15px", color: "#f1f6f9", fontStyle: "italic", letterSpacing: "0.5px" }}>
                       {sec.title}
                     </div>
-                    <div style={{ fontSize: "9px", letterSpacing: "2.5px", color: sec.accent, textTransform: "uppercase", marginTop: "2px" }}>
+                    <div style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "2.5px", color: sec.accent, textTransform: "uppercase", marginTop: "3px" }}>
                       Field Pack List
                     </div>
                   </div>
