@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Alaska Itinerary — Denali">
+  <title>Alaska Itinerary</title>
+
+  <defs>
+    <!-- Twilight alpenglow sky -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#0b1a2a"/>
+      <stop offset="42%" stop-color="#1f3a52"/>
+      <stop offset="74%" stop-color="#9b6a64"/>
+      <stop offset="92%" stop-color="#e9a279"/>
+      <stop offset="100%" stop-color="#f6c79a"/>
+    </linearGradient>
+
+    <!-- Sun glow on the horizon -->
+    <radialGradient id="sun" cx="0.72" cy="0.74" r="0.36">
+      <stop offset="0%"  stop-color="#ffe2bf" stop-opacity="0.85"/>
+      <stop offset="60%" stop-color="#ffe2bf" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ffe2bf" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Distant Mt. Foraker -->
+    <linearGradient id="foraker" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#f3dbc3"/>
+      <stop offset="18%" stop-color="#c9d2da"/>
+      <stop offset="55%" stop-color="#5d7a92"/>
+      <stop offset="100%" stop-color="#2a4359"/>
+    </linearGradient>
+
+    <!-- Denali's snow + rock face -->
+    <linearGradient id="denali" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#ffffff"/>
+      <stop offset="22%" stop-color="#e6eef5"/>
+      <stop offset="55%" stop-color="#7693a8"/>
+      <stop offset="100%" stop-color="#1c3247"/>
+    </linearGradient>
+
+    <!-- Shadowed face of Denali (east-facing, in shade) -->
+    <linearGradient id="denaliShade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#1a2f44"/>
+      <stop offset="100%" stop-color="#3a5670"/>
+    </linearGradient>
+
+    <!-- Foreground tundra ridge -->
+    <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#1b2a1a"/>
+      <stop offset="100%" stop-color="#070c0a"/>
+    </linearGradient>
+
+    <!-- Snowfield / glacier in front -->
+    <linearGradient id="glacier" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#cfe2ec"/>
+      <stop offset="100%" stop-color="#6d8ba0"/>
+    </linearGradient>
+
+    <!-- Squircle mask matches iOS home-screen shape so artwork
+         doesn't leak past the rounded corners when previewed flat. -->
+    <clipPath id="squircle">
+      <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#squircle)">
+    <!-- Sky -->
+    <rect width="1024" height="1024" fill="url(#sky)"/>
+    <rect width="1024" height="1024" fill="url(#sun)"/>
+
+    <!-- North star -->
+    <g fill="#f6e8c9" opacity="0.9">
+      <circle cx="210" cy="170" r="4"/>
+      <path d="M210 158 L212 170 L210 182 L208 170 Z"/>
+      <path d="M198 170 L210 168 L222 170 L210 172 Z"/>
+    </g>
+    <circle cx="320" cy="120" r="2.2" fill="#f6e8c9" opacity="0.7"/>
+    <circle cx="430" cy="210" r="1.6" fill="#f6e8c9" opacity="0.6"/>
+
+    <!-- Goose silhouettes, small -->
+    <g stroke="#1a2530" stroke-width="3" fill="none" opacity="0.55" stroke-linecap="round">
+      <path d="M540 250 q10 -8 20 0 q10 -8 20 0"/>
+      <path d="M620 215 q8 -6 16 0 q8 -6 16 0"/>
+    </g>
+
+    <!-- Distant subordinate peak (Mt. Foraker on the left) -->
+    <path
+      d="M0 700 L0 560 L120 470 L210 540 L300 480 L380 560 L420 540 L420 760 Z"
+      fill="url(#foraker)"
+      opacity="0.92"/>
+
+    <!-- Denali — the Great One. Broad twin-summited massif. -->
+    <!-- Lit (south/west) face -->
+    <path
+      d="M180 760
+         L300 660
+         L420 560
+         L520 360
+         L600 240
+         L680 360
+         L760 480
+         L860 600
+         L980 760 Z"
+      fill="url(#denali)"/>
+
+    <!-- Shaded (east) face wedge, gives the peak dimension -->
+    <path
+      d="M600 240
+         L680 360
+         L760 480
+         L860 600
+         L980 760
+         L800 760
+         L740 640
+         L660 500
+         L620 380 Z"
+      fill="url(#denaliShade)"
+      opacity="0.75"/>
+
+    <!-- Snow-cornice highlight along the summit ridge -->
+    <path
+      d="M520 360 L600 240 L680 360 L640 360 L600 295 L560 360 Z"
+      fill="#ffffff"
+      opacity="0.9"/>
+
+    <!-- Soft alpenglow blush on the lit (sun-facing) flank -->
+    <path
+      d="M180 760
+         L300 660
+         L420 560
+         L520 360
+         L600 295
+         L560 360
+         L520 430
+         L470 540
+         L380 660
+         L260 760 Z"
+      fill="#f1c9a5"
+      opacity="0.18"/>
+
+    <!-- Foreground glacier / snowfield -->
+    <path
+      d="M0 880 L0 800 L160 770 L320 800 L520 760 L720 790 L900 770 L1024 800 L1024 880 Z"
+      fill="url(#glacier)"/>
+
+    <!-- Foreground dark tundra ridge with a few spruce -->
+    <path
+      d="M0 1024 L0 870 L120 855 L260 875 L420 850 L600 875 L760 855 L900 870 L1024 855 L1024 1024 Z"
+      fill="url(#ridge)"/>
+
+    <!-- Spruce silhouettes on the ridge -->
+    <g fill="#050a07">
+      <path d="M150 870 l-12 28 h24 z M150 882 l-14 30 h28 z M150 895 l-16 32 h32 z"/>
+      <path d="M340 855 l-10 24 h20 z M340 866 l-12 26 h24 z M340 878 l-14 28 h28 z"/>
+      <path d="M540 868 l-11 26 h22 z M540 880 l-13 28 h26 z M540 893 l-15 30 h30 z"/>
+      <path d="M740 858 l-10 24 h20 z M740 869 l-12 26 h24 z M740 881 l-14 28 h28 z"/>
+      <path d="M880 866 l-10 24 h20 z M880 877 l-12 26 h24 z M880 889 l-14 28 h28 z"/>
+    </g>
+  </g>
+</svg>
