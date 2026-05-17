@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { PHOTOS } from "./photos.js";
+import { usePhotos, isPastDay, enhanceItems } from "./photos.js";
 
 const TRIP_DATA = {
 flights: {
@@ -69,7 +69,6 @@ location: "Vancouver, BC",
 icon: "🏙️",
 weather: { icon: "🌦️", hi: 63, lo: 52, desc: "Actual: mix of sun & cloud with periods of drizzle. Cool morning, milder afternoon. (Environment Canada)" },
 astro: { sunrise: "5:41 AM", sunset: "8:36 PM", moon: "🌖", phase: "Waning Gibbous" },
-photos: ["may7_seawall", "may7_selfie", "may7_tidepools"],
 items: [
 "Stanley Park — bike or walk the seawall",
 "Uber to Granville Island food market",
@@ -115,7 +114,6 @@ location: "Ketchikan, AK  7AM–3PM",
 icon: "🐟",
 weather: { icon: "⛅", hi: 50, lo: 42, desc: "Actual: pleasant surprise — high-pressure ridge held off the rain. Mostly cloudy with sun breaks, dry conditions (rare for Ketchikan!)." },
 astro: { sunrise: "4:47 AM", sunset: "8:39 PM", moon: "🌗", phase: "Last Quarter" },
-photos: ["may10_creek", "may10_totem"],
 items: [
 "✅ BOOKED: Wilderness Exploration & Crab Feast — 9:00 AM — $503.98",
 "Order #211686852 (Celebrity Shorex)",
@@ -131,7 +129,6 @@ location: "Sitka, AK  7AM–3:30PM",
 icon: "🦅",
 weather: { icon: "⛅", hi: 50, lo: 42, desc: "Actual: mostly cloudy but dry, light winds. Ideal kayaking conditions on calm water." },
 astro: { sunrise: "4:51 AM", sunset: "9:04 PM", moon: "🌘", phase: "Waning Crescent" },
-photos: ["may11_launch", "may11_kayak", "may11_paddle"],
 items: [
 "✅ BOOKED: Wilderness Sea Kayaking Adventure — 8:30 AM — $459.98",
 "Order #211686852 (Celebrity Shorex)",
@@ -147,7 +144,6 @@ location: "Juneau, AK  7AM–9:30PM",
 icon: "🏔️",
 weather: { icon: "☀️", hi: 60, lo: 42, desc: "Actual: SUNNY & BEAUTIFUL ☀️ High-pressure ridge cleared the skies. Mostly sunny all day, light winds — perfect for the Mendenhall + Eagle Beach drive." },
 astro: { sunrise: "4:38 AM", sunset: "9:09 PM", moon: "🌘", phase: "Waning Crescent" },
-photos: ["may12_glacier", "may12_falls", "may12_brewery", "may12_eagle", "may12_rainforest"],
 items: [
 "✅ DONE — self-drive day via Explore Juneau rental (Booking 019e1d2a)",
 "✓ Mendenhall Glacier & Nugget Falls",
@@ -601,6 +597,53 @@ borderRadius: "2px",
 );
 }
 
+// Renders one itinerary bullet, with an optional photo-evidence badge that
+// opens the lightbox at the first matching photo. `derived` rows are bullets
+// the photo data added (photos whose location matched no existing bullet).
+function ItineraryRow({ entry, section, C, derived, onOpenPhoto }) {
+  const fontDisplay = "'Hoefler Text', 'Didot', 'Bodoni 72', 'Times New Roman', serif";
+  const photos = entry.photos || [];
+  const hasPhotos = photos.length > 0;
+  return (
+    <div style={{
+      display: "flex", gap: "10px", padding: "6px 0",
+      fontSize: "13px", color: C.mist,
+      alignItems: "flex-start", lineHeight: 1.45,
+    }}>
+      <span style={{
+        color: derived ? C.iceBlue : section.accent,
+        flexShrink: 0, marginTop: "2px", fontSize: "10px",
+      }}>
+        {derived ? "📷" : "◆"}
+      </span>
+      <span style={{ flex: 1, fontStyle: derived ? "italic" : "normal" }}>
+        {derived ? entry.text : linkifyAddresses(entry.text, C.iceBlue)}
+        {hasPhotos && (
+          <button
+            type="button"
+            onClick={() => onOpenPhoto(photos, 0)}
+            title={`${photos.length} matching photo${photos.length === 1 ? "" : "s"}`}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: "4px",
+              marginLeft: "8px", padding: "1px 7px",
+              fontSize: "10px", fontFamily: fontDisplay,
+              color: C.iceBlue,
+              background: `${C.iceBlue}14`,
+              border: `1px solid ${C.iceBlue}55`,
+              borderRadius: "10px",
+              cursor: "pointer",
+              verticalAlign: "1px",
+              letterSpacing: "0.5px",
+            }}
+          >
+            📷 {photos.length}
+          </button>
+        )}
+      </span>
+    </div>
+  );
+}
+
 
 // ─── Park Conditions (live from NPS, cached 24h) ──────────────
 const FALLBACK_CONDITIONS = {
@@ -993,7 +1036,8 @@ const [activeTab, setActiveTab] = useState("itinerary");
 const [todos, setTodos] = useState(TRIP_DATA.todos);
 const [expandedDay, setExpandedDay] = useState(null);
 const [showCosts, setShowCosts] = useState(false);
-const [lightbox, setLightbox] = useState(null); // { photos: [keys], index: number }
+const [lightbox, setLightbox] = useState(null); // { photos: [photoObj], index: number }
+const { byDate: photosByDate, loading: photosLoading, error: photosError } = usePhotos();
 
 // Hint the browser so native UI (scrollbars, form controls, default canvas)
 // matches the active palette.
@@ -1242,6 +1286,14 @@ filter: "blur(50px)",
           {section.days.map((day, i) => {
             const expanded = expandedDay === i;
             const accentColor = day.status === "booked" ? C.pineSoft : day.status === "todo" ? C.alpenglow : C.stone;
+            // Photos and bullet enhancement only apply to days that have
+            // started (date ≤ today). Future days render in their planned
+            // form, untouched by the iCloud album.
+            const past = isPastDay(day.date);
+            const dayPhotos = past ? (photosByDate[day.date] || []) : [];
+            const { enriched: enrichedItems, derived: derivedItems } = past
+              ? enhanceItems(day.items, dayPhotos)
+              : { enriched: day.items.map((text) => ({ text, photos: [] })), derived: [] };
             return (
               <div key={i} style={{ marginBottom: "10px", position: "relative" }}>
                 <button
@@ -1386,14 +1438,14 @@ filter: "blur(50px)",
                         )}
                       </div>
                     )}
-                    {day.photos && day.photos.length > 0 && (
+                    {past && dayPhotos.length > 0 && (
                       <div style={{ marginBottom: "12px" }}>
                         <div style={{
                           fontSize: "9px", letterSpacing: "2.5px", color: section.accent,
                           textTransform: "uppercase", marginBottom: "8px",
                           fontFamily: fontDisplay, display: "flex", alignItems: "center", gap: "8px",
                         }}>
-                          <span>✦ Photographs</span>
+                          <span>✦ Photographs · {dayPhotos.length}</span>
                           <div style={{ flex: 1, height: "1px", background: `${section.accent}33` }} />
                         </div>
                         <div style={{
@@ -1401,79 +1453,93 @@ filter: "blur(50px)",
                           paddingBottom: "6px", scrollbarWidth: "thin",
                           WebkitOverflowScrolling: "touch",
                         }}>
-                          {day.photos.map((pid, pIdx) => {
-                            const photo = PHOTOS[pid];
-                            if (!photo) return null;
-                            return (
-                              <div key={pid} style={{ flexShrink: 0, width: "150px" }}>
-                                <div
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={() => setLightbox({ photos: day.photos, index: pIdx })}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      setLightbox({ photos: day.photos, index: pIdx });
-                                    }
-                                  }}
-                                  style={{
-                                    width: "150px", height: "200px", overflow: "hidden",
-                                    border: `1px solid ${C.iceBlue}33`,
-                                    borderRadius: "2px",
-                                    background: C.midnight,
-                                    boxShadow: `0 2px 8px ${C.midnight}99`,
-                                    cursor: "pointer",
-                                    transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
-                                    position: "relative",
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.transform = "translateY(-2px)";
-                                    e.currentTarget.style.boxShadow = `0 4px 14px ${C.midnight}cc`;
-                                    e.currentTarget.style.borderColor = `${C.iceBlue}88`;
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.transform = "";
-                                    e.currentTarget.style.boxShadow = `0 2px 8px ${C.midnight}99`;
-                                    e.currentTarget.style.borderColor = `${C.iceBlue}33`;
-                                  }}
-                                >
-                                  <img src={photo.src} alt={photo.caption} style={{
-                                    width: "100%", height: "100%", objectFit: "cover", display: "block",
-                                    pointerEvents: "none",
-                                  }} />
-                                  <div style={{
-                                    position: "absolute", bottom: "6px", right: "6px",
-                                    width: "22px", height: "22px",
-                                    borderRadius: "50%",
-                                    background: `${C.midnight}cc`,
-                                    backdropFilter: "blur(4px)",
-                                    display: "flex", alignItems: "center", justifyContent: "center",
-                                    fontSize: "11px", color: C.iceBlue,
-                                    border: `1px solid ${C.iceBlue}44`,
-                                  }}>⤢</div>
-                                </div>
+                          {dayPhotos.map((photo, pIdx) => (
+                            <div key={photo.guid} style={{ flexShrink: 0, width: "150px" }}>
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setLightbox({ photos: dayPhotos, index: pIdx })}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" || e.key === " ") {
+                                    e.preventDefault();
+                                    setLightbox({ photos: dayPhotos, index: pIdx });
+                                  }
+                                }}
+                                style={{
+                                  width: "150px", height: "200px", overflow: "hidden",
+                                  border: `1px solid ${C.iceBlue}33`,
+                                  borderRadius: "2px",
+                                  background: C.midnight,
+                                  boxShadow: `0 2px 8px ${C.midnight}99`,
+                                  cursor: "pointer",
+                                  transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+                                  position: "relative",
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = "translateY(-2px)";
+                                  e.currentTarget.style.boxShadow = `0 4px 14px ${C.midnight}cc`;
+                                  e.currentTarget.style.borderColor = `${C.iceBlue}88`;
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = "";
+                                  e.currentTarget.style.boxShadow = `0 2px 8px ${C.midnight}99`;
+                                  e.currentTarget.style.borderColor = `${C.iceBlue}33`;
+                                }}
+                              >
+                                <img src={photo.thumb || photo.src} alt={photo.caption || photo.locationName || ""} style={{
+                                  width: "100%", height: "100%", objectFit: "cover", display: "block",
+                                  pointerEvents: "none",
+                                }} loading="lazy" />
                                 <div style={{
-                                  fontSize: "10px", color: C.textMuted,
-                                  marginTop: "5px", lineHeight: 1.3,
-                                  fontFamily: fontDisplay, fontStyle: "italic",
-                                }}>
-                                  {photo.caption}
-                                </div>
+                                  position: "absolute", bottom: "6px", right: "6px",
+                                  width: "22px", height: "22px",
+                                  borderRadius: "50%",
+                                  background: `${C.midnight}cc`,
+                                  backdropFilter: "blur(4px)",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  fontSize: "11px", color: C.iceBlue,
+                                  border: `1px solid ${C.iceBlue}44`,
+                                }}>⤢</div>
                               </div>
-                            );
-                          })}
+                              <div style={{
+                                fontSize: "10px", color: C.textMuted,
+                                marginTop: "5px", lineHeight: 1.3,
+                                fontFamily: fontDisplay, fontStyle: "italic",
+                              }}>
+                                {photo.caption || photo.locationName || ""}
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     )}
-                    {day.items.map((item, j) => (
-                      <div key={j} style={{
-                        display: "flex", gap: "10px", padding: "6px 0",
-                        fontSize: "13px", color: C.mist,
-                        alignItems: "flex-start", lineHeight: 1.45,
+                    {past && photosLoading && dayPhotos.length === 0 && (
+                      <div style={{
+                        fontSize: "10px", color: C.textDim,
+                        fontStyle: "italic", marginBottom: "10px",
+                        fontFamily: fontDisplay, letterSpacing: "1px",
                       }}>
-                        <span style={{ color: section.accent, flexShrink: 0, marginTop: "2px", fontSize: "10px" }}>◆</span>
-                        <span>{linkifyAddresses(item, C.iceBlue)}</span>
+                        loading photos…
                       </div>
+                    )}
+                    {enrichedItems.map((entry, j) => (
+                      <ItineraryRow
+                        key={`e-${j}`}
+                        entry={entry}
+                        section={section}
+                        C={C}
+                        onOpenPhoto={(photos, idx) => setLightbox({ photos, index: idx })}
+                      />
+                    ))}
+                    {derivedItems.map((entry, j) => (
+                      <ItineraryRow
+                        key={`d-${j}`}
+                        entry={entry}
+                        section={section}
+                        C={C}
+                        derived
+                        onOpenPhoto={(photos, idx) => setLightbox({ photos, index: idx })}
+                      />
                     ))}
                   </div>
                 )}
@@ -1639,9 +1705,10 @@ filter: "blur(50px)",
 
   {/* ═══ LIGHTBOX OVERLAY ═══ */}
   {lightbox && (() => {
-    const photo = PHOTOS[lightbox.photos[lightbox.index]];
+    const photo = lightbox.photos[lightbox.index];
     const hasPrev = lightbox.index > 0;
     const hasNext = lightbox.index < lightbox.photos.length - 1;
+    const captionText = photo?.caption || photo?.locationName || "";
     return (
       <div
         onClick={() => setLightbox(null)}
@@ -1754,9 +1821,9 @@ filter: "blur(50px)",
           }}
         >
           <img
-            key={lightbox.photos[lightbox.index]}
-            src={photo.src}
-            alt={photo.caption}
+            key={photo?.guid || lightbox.index}
+            src={photo?.src}
+            alt={captionText}
             style={{
               maxWidth: "100%",
               maxHeight: "calc(100vh - 140px)",
@@ -1767,17 +1834,27 @@ filter: "blur(50px)",
               display: "block",
             }}
           />
-          <div style={{
-            textAlign: "center", maxWidth: "600px",
-            fontFamily: fontDisplay, fontStyle: "italic",
-            fontSize: "14px", color: C.mist,
-            letterSpacing: "0.5px",
-            background: `${C.deepFjord}99`,
-            padding: "8px 18px",
-            border: `1px solid ${C.stone}33`,
-          }}>
-            {photo.caption}
-          </div>
+          {(captionText || photo?.locationName) && (
+            <div style={{
+              textAlign: "center", maxWidth: "600px",
+              fontFamily: fontDisplay, fontStyle: "italic",
+              fontSize: "14px", color: C.mist,
+              letterSpacing: "0.5px",
+              background: `${C.deepFjord}99`,
+              padding: "8px 18px",
+              border: `1px solid ${C.stone}33`,
+            }}>
+              {captionText}
+              {photo?.locationName && photo.locationName !== captionText && (
+                <span style={{
+                  marginLeft: "8px", color: C.iceBlue, fontStyle: "normal",
+                  fontSize: "11px", letterSpacing: "1px",
+                }}>
+                  📍 {photo.locationName}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
