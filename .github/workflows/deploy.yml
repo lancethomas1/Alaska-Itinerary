@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Periodic re-sync so newly added iCloud Shared Album photos appear
+  # without a code push. GitHub may delay scheduled runs by up to ~hour
+  # during peak load — that's the worst-case staleness.
+  schedule:
+    - cron: "*/30 * * * *"
 
 permissions:
   contents: read
@@ -26,6 +31,14 @@ jobs:
           cache: npm
 
       - run: npm ci
+
+      # Server-side fetch of the iCloud Shared Album → public/album.json
+      # + public/photos/*.jpg. No CORS issue because this runs on a CI
+      # IP, not a browser. Skipped silently if iCloud refuses (keeps the
+      # last good copy of album.json from a prior run, when present).
+      - name: Sync iCloud Shared Album
+        run: node scripts/sync-icloud-album.mjs
+        continue-on-error: true
 
       - run: npm run build
 

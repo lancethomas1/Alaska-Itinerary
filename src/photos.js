@@ -1,21 +1,17 @@
-// Loads photos from a public iCloud Shared Album and merges GPS coordinates
-// from a local manifest (built by scripts/build-photos-manifest.mjs from
-// original-quality exports). iCloud strips EXIF from shared albums, so the
-// manifest sidecar is the only path to per-photo GPS.
+// Reads the iCloud Shared Album from a JSON file baked into the static
+// deploy by scripts/sync-icloud-album.mjs (run in GitHub Actions before
+// every build). iCloud doesn't send CORS headers for browser fetches, so
+// fetching live from the page is impossible on GitHub Pages — the build
+// step does it server-side and ships the result as /album.json plus a
+// /photos/ directory of downloaded JPGs.
 //
-// Fetch pipeline:
-//   1. POST /webstream      → list photos (guid, date, caption, derivatives)
-//   2. POST /webasseturls   → resolve checksums to CDN URLs
-//   3. Match each photo to a manifest entry by capture timestamp (±5 min)
-//   4. Reverse-geocode any GPS into a human place name (cached locally)
-//   5. Fall back to a place-name pulled from the caption when no GPS
+// Per-photo GPS still comes from src/photos-manifest.json, built locally
+// from original-quality exports (iCloud strips EXIF from shared albums).
 
 import { useEffect, useState } from "react";
 import manifest from "./photos-manifest.json";
 
-const ALBUM_TOKEN = "B2QJqstnBJOH2V1";
-const PARTITION_DEFAULT = "p23";
-const STORAGE_KEY = "alaska-photos-v2";
+const STORAGE_KEY = "alaska-photos-v3";
 const GEOCODE_KEY = "alaska-geocode-v1";
 
 const TRIP_YEAR = 2026;
@@ -24,9 +20,9 @@ const MONTHS = [
   "Jul","Aug","Sep","Oct","Nov","Dec",
 ];
 
-// Capture-time matching window between the iCloud `dateCreated` (UTC) and a
-// manifest entry's EXIF DateTimeOriginal (UTC when OffsetTimeOriginal is
-// present, which modern iPhones always include).
+// Capture-time matching window between the photo's recorded `dateCreated`
+// (UTC) and a manifest entry's EXIF DateTimeOriginal (UTC when
+// OffsetTimeOriginal is present, which modern iPhones always include).
 const MATCH_TOLERANCE_MS = 5 * 60 * 1000;
 
 function loadCache(key) {
@@ -47,82 +43,25 @@ function saveCache(key, value) {
   }
 }
 
-// ─── iCloud Shared Album API ──────────────────────────────────────────────
-async function iCloudPost(partition, token, endpoint, body) {
-  const url =
-    `https://${partition}-sharedstreams.icloud.com/${token}` +
-    `/sharedstreams/${endpoint}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain" },
-    body: JSON.stringify(body),
-  });
-  // Apple sometimes hands back a partition redirect — body names the host.
-  if (res.status === 330) {
-    const data = await res.json();
-    const host = (data["X-Apple-MMe-Host"] || "").split("-sharedstreams")[0];
-    if (!host) throw new Error("iCloud redirect without host");
-    return iCloudPost(host, token, endpoint, body);
-  }
-  if (!res.ok) throw new Error(`iCloud ${endpoint} ${res.status}`);
-  return res.json();
-}
-
-async function fetchIcloudAlbum(token) {
-  const stream = await iCloudPost(PARTITION_DEFAULT, token, "webstream", {
-    streamCtag: null,
-  });
-  const photos = stream.photos || [];
-  if (!photos.length) return [];
-
-  const guids = photos.map((p) => p.photoGuid);
-  const items = {};
-  const locations = {};
-  for (let i = 0; i < guids.length; i += 25) {
-    const data = await iCloudPost(
-      PARTITION_DEFAULT,
-      token,
-      "webasseturls",
-      { photoGuids: guids.slice(i, i + 25) },
-    );
-    Object.assign(items, data.items || {});
-    Object.assign(locations, data.locations || {});
-  }
-
-  const resolveUrl = (checksum) => {
-    const item = items[checksum];
-    if (!item) return null;
-    const loc = locations[item.url_location];
-    const host = loc?.hosts?.[0] || item.url_location;
-    const scheme = loc?.scheme || "https";
-    return `${scheme}://${host}${item.url_path}`;
-  };
-
-  return photos
-    .map((p) => {
-      const derivs = p.derivatives || {};
-      let bestKey = null;
-      let bestArea = 0;
-      let smallKey = null;
-      let smallArea = Infinity;
-      for (const [k, d] of Object.entries(derivs)) {
-        const a = Number(d.width || 0) * Number(d.height || 0);
-        if (a > bestArea) { bestArea = a; bestKey = k; }
-        if (a > 0 && a < smallArea) { smallArea = a; smallKey = k; }
-      }
-      const src = bestKey ? resolveUrl(derivs[bestKey].checksum) : null;
-      const thumb = smallKey ? resolveUrl(derivs[smallKey].checksum) : src;
-      return {
-        guid: p.photoGuid,
-        caption: (p.caption || "").trim(),
-        dateCreated: p.dateCreated,
-        width: Number(p.width || 0),
-        height: Number(p.height || 0),
-        src,
-        thumb,
-      };
-    })
-    .filter((p) => p.src);
+// ─── Album fetch (from baked-in static JSON) ──────────────────────────────
+async function fetchAlbum() {
+  const base = import.meta.env.BASE_URL || "/";
+  const albumUrl = `${base}album.json`;
+  const res = await fetch(albumUrl, { cache: "no-cache" });
+  if (!res.ok) throw new Error(`album.json ${res.status}`);
+  const data = await res.json();
+  const photos = data.photos || [];
+  // Prefix relative photo paths with Vite's base so the URLs resolve under
+  // /Alaska-Itinerary/ on GH Pages and / in local dev.
+  return photos.map((p) => ({
+    guid: p.guid,
+    caption: (p.caption || "").trim(),
+    dateCreated: p.dateCreated,
+    width: Number(p.width || 0),
+    height: Number(p.height || 0),
+    src: p.src?.startsWith("http") ? p.src : `${base}${p.src}`,
+    thumb: p.thumb?.startsWith("http") ? p.thumb : `${base}${p.thumb || p.src}`,
+  })).filter((p) => p.src);
 }
 
 // ─── Manifest matching ────────────────────────────────────────────────────
@@ -212,7 +151,7 @@ export function usePhotos() {
     let cancelled = false;
     (async () => {
       try {
-        const photos = await fetchIcloudAlbum(ALBUM_TOKEN);
+        const photos = await fetchAlbum();
         const groups = {};
         for (const p of photos) {
           const k = dateKey(p.dateCreated);
