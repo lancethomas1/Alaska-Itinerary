@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePhotos, isPastDay, enhanceItems } from "./photos.js";
 
 const TRIP_DATA = {
@@ -1029,6 +1029,390 @@ function useSystemTheme() {
   return theme;
 }
 
+// ─── Aurora · Trip Concierge ──────────────────────────────
+// Browser-direct Claude chat grounded in TRIP_DATA. BYOK: the user's
+// Anthropic API key lives in localStorage and never leaves their
+// device. CORS is unlocked with the `anthropic-dangerous-direct-browser-access`
+// header — appropriate for a personal family app, not a public service.
+function TripChat({ tripData, fontDisplay, fontBody, sectionAccent }) {
+  const [storedKey, setStoredKey] = useState(() => {
+    if (typeof localStorage === "undefined") return "";
+    return localStorage.getItem("anthropicApiKey") || "";
+  });
+  const [keyDraft, setKeyDraft] = useState("");
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const scrollerRef = useRef(null);
+
+  const todayLabel = useMemo(
+    () => new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
+    []
+  );
+
+  const systemPrompt = useMemo(
+    () =>
+      `You are Aurora, a warm and concise travel concierge for Lance & Betsy Thomas's Alaska expedition (May 6–18, 2026, celebrating Betsy's 40th birthday). Today is ${todayLabel}.
+
+You have full knowledge of their itinerary, flights, costs, packing lists, and to-dos via the JSON below. Answer questions about their trip using only this context; if asked about something not in the data, say so honestly rather than inventing details.
+
+Style: short, friendly replies (typically 2–4 sentences). Plain text or simple bullet lists — no markdown headings. Mention specific dates, places, or confirmation numbers when relevant.
+
+Trip data (JSON):
+${JSON.stringify(tripData, null, 2)}`,
+    [tripData, todayLabel]
+  );
+
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [messages, loading, error]);
+
+  const saveKey = () => {
+    const k = keyDraft.trim();
+    if (!k) return;
+    localStorage.setItem("anthropicApiKey", k);
+    setStoredKey(k);
+    setKeyDraft("");
+    setError(null);
+  };
+
+  const clearKey = () => {
+    localStorage.removeItem("anthropicApiKey");
+    setStoredKey("");
+    setMessages([]);
+    setError(null);
+  };
+
+  const send = async () => {
+    const text = input.trim();
+    if (!text || loading || !storedKey) return;
+    const next = [...messages, { role: "user", content: text }];
+    setMessages(next);
+    setInput("");
+    setLoading(true);
+    setError(null);
+    try {
+      const resp = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": storedKey,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
+        body: JSON.stringify({
+          model: "claude-opus-4-7",
+          max_tokens: 1024,
+          system: [
+            { type: "text", text: systemPrompt, cache_control: { type: "ephemeral" } },
+          ],
+          messages: next,
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        throw new Error(data?.error?.message || `HTTP ${resp.status}`);
+      }
+      const reply =
+        data.content?.find((b) => b.type === "text")?.text || "(no response)";
+      setMessages([...next, { role: "assistant", content: reply }]);
+    } catch (e) {
+      setError(e?.message || String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  };
+
+  const accent = sectionAccent || C.iceBlue;
+
+  // ── Key-entry state ─────────────────────────────────────
+  if (!storedKey) {
+    return (
+      <div>
+        <div style={{ textAlign: "center", marginBottom: "20px", fontFamily: fontDisplay }}>
+          <div style={{ fontSize: "11px", color: accent, letterSpacing: "4px", textTransform: "uppercase" }}>
+            Aurora · Trip Concierge
+          </div>
+          <div style={{ fontSize: "11px", color: C.textDim, letterSpacing: "2px", marginTop: "4px", fontStyle: "italic" }}>
+            Ask anything about the expedition
+          </div>
+        </div>
+
+        <div style={{
+          background: `${C.midnight}cc`, border: `1px solid ${accent}33`,
+          borderLeft: `2px solid ${accent}`,
+          padding: "18px 18px 16px", backdropFilter: "blur(8px)",
+        }}>
+          <div style={{
+            fontFamily: fontDisplay, fontSize: "13px", color: C.snow,
+            fontStyle: "italic", letterSpacing: "0.5px", marginBottom: "8px",
+          }}>
+            ✦ One-time setup
+          </div>
+          <div style={{ fontSize: "12px", color: C.textMuted, lineHeight: 1.55, marginBottom: "14px" }}>
+            Paste an Anthropic API key to enable the chat. It's stored only in this browser's local storage and sent directly to Anthropic — no server in between. Get one at{" "}
+            <a
+              href="https://console.anthropic.com/settings/keys"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: accent, textDecoration: "underline", textUnderlineOffset: "2px" }}
+            >
+              console.anthropic.com
+            </a>
+            .
+          </div>
+          <input
+            type="password"
+            value={keyDraft}
+            onChange={(e) => setKeyDraft(e.target.value)}
+            placeholder="sk-ant-..."
+            autoComplete="off"
+            spellCheck={false}
+            style={{
+              width: "100%", boxSizing: "border-box",
+              background: `${C.deepFjord}cc`,
+              border: `1px solid ${C.stone}33`,
+              borderLeft: `2px solid ${accent}66`,
+              color: C.snow, fontFamily: fontBody, fontSize: "13px",
+              padding: "10px 12px", outline: "none",
+              letterSpacing: "0.5px",
+            }}
+          />
+          <button
+            onClick={saveKey}
+            disabled={!keyDraft.trim()}
+            style={{
+              marginTop: "10px", width: "100%",
+              background: keyDraft.trim() ? `${accent}33` : `${C.stone}22`,
+              border: `1px solid ${keyDraft.trim() ? accent : C.stone + "33"}`,
+              color: keyDraft.trim() ? C.snow : C.textDim,
+              fontFamily: fontDisplay, fontSize: "11px",
+              letterSpacing: "2.5px", textTransform: "uppercase",
+              padding: "10px", cursor: keyDraft.trim() ? "pointer" : "default",
+              transition: "all 0.15s",
+            }}
+          >
+            ◈ Save Key
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Chat state ──────────────────────────────────────────
+  const examples = [
+    "What's on the agenda for May 12?",
+    "How much have we spent so far?",
+    "What's the weather like in Sitka?",
+    "What still needs to be booked?",
+  ];
+
+  return (
+    <div>
+      <div style={{ textAlign: "center", marginBottom: "16px", fontFamily: fontDisplay }}>
+        <div style={{ fontSize: "11px", color: accent, letterSpacing: "4px", textTransform: "uppercase" }}>
+          Aurora · Trip Concierge
+        </div>
+        <div style={{ fontSize: "11px", color: C.textDim, letterSpacing: "2px", marginTop: "4px", fontStyle: "italic" }}>
+          Ask anything about the expedition
+        </div>
+      </div>
+
+      {/* Conversation */}
+      <div
+        ref={scrollerRef}
+        style={{
+          background: `${C.midnight}aa`, backdropFilter: "blur(8px)",
+          border: `1px solid ${C.stone}25`,
+          padding: "14px", marginBottom: "10px",
+          minHeight: "240px", maxHeight: "55vh", overflowY: "auto",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "thin",
+        }}
+      >
+        {messages.length === 0 && (
+          <div>
+            <div style={{
+              fontFamily: fontDisplay, fontSize: "11px", color: C.textDim,
+              letterSpacing: "2.5px", textTransform: "uppercase",
+              marginBottom: "10px",
+            }}>
+              ◆ Try asking
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+              {examples.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => setInput(q)}
+                  style={{
+                    textAlign: "left", padding: "9px 12px",
+                    background: `${C.deepFjord}66`,
+                    border: `1px solid ${C.stone}22`,
+                    borderLeft: `2px solid ${accent}55`,
+                    color: C.mist, fontFamily: fontBody, fontSize: "12px",
+                    cursor: "pointer", transition: "all 0.15s",
+                    fontStyle: "italic",
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {messages.map((m, i) => {
+          const isUser = m.role === "user";
+          return (
+            <div
+              key={i}
+              style={{
+                marginBottom: "10px",
+                display: "flex",
+                justifyContent: isUser ? "flex-end" : "flex-start",
+              }}
+            >
+              <div style={{
+                maxWidth: "85%",
+                background: isUser ? `${C.fjord}cc` : `${C.deepFjord}cc`,
+                border: `1px solid ${isUser ? accent + "44" : C.stone + "33"}`,
+                borderLeft: isUser ? "none" : `2px solid ${accent}`,
+                borderRight: isUser ? `2px solid ${accent}` : "none",
+                padding: "9px 13px",
+                color: C.snow, fontFamily: fontBody, fontSize: "13px",
+                lineHeight: 1.5, whiteSpace: "pre-wrap", wordBreak: "break-word",
+              }}>
+                <div style={{
+                  fontFamily: fontDisplay, fontSize: "9px", letterSpacing: "2px",
+                  textTransform: "uppercase", color: isUser ? C.iceBlue : accent,
+                  marginBottom: "4px",
+                }}>
+                  {isUser ? "You" : "✦ Aurora"}
+                </div>
+                {m.content}
+              </div>
+            </div>
+          );
+        })}
+
+        {loading && (
+          <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "10px" }}>
+            <div style={{
+              background: `${C.deepFjord}cc`, border: `1px solid ${C.stone}33`,
+              borderLeft: `2px solid ${accent}`,
+              padding: "9px 13px",
+              fontFamily: fontDisplay, fontStyle: "italic",
+              fontSize: "12px", color: C.textMuted,
+              letterSpacing: "0.5px",
+            }}>
+              ✦ Aurora is thinking…
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && (
+        <div style={{
+          background: `${C.alpenglow}15`,
+          border: `1px solid ${C.alpenglow}55`,
+          borderLeft: `2px solid ${C.alpenglow}`,
+          padding: "9px 12px", marginBottom: "10px",
+          fontSize: "12px", color: C.alpenglow,
+          fontFamily: fontBody, lineHeight: 1.45,
+        }}>
+          ⚠ {error}
+        </div>
+      )}
+
+      {/* Composer */}
+      <div style={{
+        display: "flex", gap: "8px", alignItems: "stretch",
+        background: `${C.midnight}aa`, padding: "8px",
+        border: `1px solid ${C.stone}25`,
+      }}>
+        <textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={onKeyDown}
+          placeholder="Ask about the trip…"
+          rows={1}
+          style={{
+            flex: 1, resize: "none",
+            background: `${C.deepFjord}99`,
+            border: `1px solid ${C.stone}22`,
+            color: C.snow, fontFamily: fontBody, fontSize: "13px",
+            padding: "9px 11px", outline: "none",
+            minHeight: "38px", maxHeight: "120px",
+            lineHeight: 1.4,
+          }}
+        />
+        <button
+          onClick={send}
+          disabled={!input.trim() || loading}
+          style={{
+            background: input.trim() && !loading ? `${accent}33` : `${C.stone}22`,
+            border: `1px solid ${input.trim() && !loading ? accent : C.stone + "33"}`,
+            color: input.trim() && !loading ? C.snow : C.textDim,
+            fontFamily: fontDisplay, fontSize: "11px",
+            letterSpacing: "2px", textTransform: "uppercase",
+            padding: "0 16px",
+            cursor: input.trim() && !loading ? "pointer" : "default",
+            transition: "all 0.15s",
+          }}
+        >
+          {loading ? "…" : "Send"}
+        </button>
+      </div>
+
+      {/* Footer controls */}
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        marginTop: "10px", fontFamily: fontDisplay, fontSize: "10px",
+        letterSpacing: "1.5px", textTransform: "uppercase",
+      }}>
+        <span style={{ color: C.textDim }}>
+          Model · claude-opus-4-7
+        </span>
+        <div style={{ display: "flex", gap: "12px" }}>
+          {messages.length > 0 && (
+            <button
+              onClick={() => { setMessages([]); setError(null); }}
+              style={{
+                background: "none", border: "none", padding: 0,
+                color: C.textMuted, fontFamily: "inherit", fontSize: "inherit",
+                letterSpacing: "inherit", textTransform: "inherit",
+                cursor: "pointer",
+              }}
+            >
+              Clear chat
+            </button>
+          )}
+          <button
+            onClick={clearKey}
+            style={{
+              background: "none", border: "none", padding: 0,
+              color: C.textMuted, fontFamily: "inherit", fontSize: "inherit",
+              letterSpacing: "inherit", textTransform: "inherit",
+              cursor: "pointer",
+            }}
+          >
+            Remove key
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AlaskaTripPlanner() {
 const theme = useSystemTheme();
 const [activeSection, setActiveSection] = useState("cruise");
@@ -1240,10 +1624,11 @@ filter: "blur(50px)",
         border: `1px solid ${C.stone}25`,
         padding: "4px", marginBottom: "24px",
       }}>
-        {["itinerary", "packing", "todos"].map((tab) => {
+        {["itinerary", "packing", "todos", "chat"].map((tab) => {
           const active = activeTab === tab;
           const label = tab === "itinerary" ? "✦ Itinerary"
             : tab === "packing" ? "▲ Packing"
+            : tab === "chat" ? "✦ Ask"
             : `◈ Todo ${completedCount}/${todos.length}`;
           return (
             <button key={tab} onClick={() => setActiveTab(tab)} style={{
@@ -1707,6 +2092,16 @@ filter: "blur(50px)",
             );
           })}
         </div>
+      )}
+
+      {/* ═══ CHAT ═══ */}
+      {activeTab === "chat" && (
+        <TripChat
+          tripData={TRIP_DATA}
+          fontDisplay={fontDisplay}
+          fontBody={fontBody}
+          sectionAccent={section.accent}
+        />
       )}
 
       {/* ─── Footer ─── */}
