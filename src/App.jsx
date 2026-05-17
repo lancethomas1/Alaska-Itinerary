@@ -858,6 +858,109 @@ function ParkConditionsCard({ accent, fontDisplay }) {
   );
 }
 
+const DENALI_VIEWPOINTS = [
+  {
+    zone: "Inside the Park",
+    note: "By car or park bus — closer to the massif",
+    spots: [
+      { name: "Mile 9 Viewpoint", detail: "First clear summit view; accessible by car on the park road", query: "Mountain Vista Trailhead, Denali National Park" },
+      { name: "Stony Hill Overlook", detail: "Mile 62 — classic head-on view, bus access only", query: "Stony Hill Overlook, Denali National Park" },
+      { name: "Eielson Visitor Center", detail: "Mile 66 — closest road-accessible view of the summit, bus only", query: "Eielson Visitor Center, Denali National Park" },
+    ],
+  },
+  {
+    zone: "South of the Park",
+    note: "Parks Highway pullouts — on a clear day",
+    spots: [
+      { name: "Denali View South", detail: "Parks Hwy Mile 135 — panoramic Alaska Range pullout", query: "Denali Viewpoint South, Alaska" },
+      { name: "Denali View North", detail: "Parks Hwy Mile 162 — northbound pullout with sweeping summit view", query: "Denali View North, Alaska" },
+    ],
+  },
+];
+
+function DenaliViewpointsCard({ accent, fontDisplay }) {
+  return (
+    <div style={{
+      background: `linear-gradient(180deg, ${C.deepFjord}f0 0%, ${C.midnight}f0 100%)`,
+      border: `1px solid ${accent}55`,
+      borderLeft: `3px solid ${accent}`,
+      padding: "16px 18px",
+      marginBottom: "16px",
+    }}>
+      <div style={{
+        fontFamily: fontDisplay, fontSize: "10px",
+        letterSpacing: "3px", textTransform: "uppercase", color: accent,
+        marginBottom: "4px",
+      }}>
+        ◈ Summit Viewpoints
+      </div>
+      <div style={{
+        fontFamily: fontDisplay, fontStyle: "italic",
+        fontSize: "14px", color: C.snow,
+        lineHeight: 1.4, marginBottom: "12px",
+      }}>
+        Best places to see The High One
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+        {DENALI_VIEWPOINTS.map((zone, zi) => (
+          <div key={zi}>
+            <div style={{
+              display: "flex", alignItems: "baseline", gap: "8px",
+              paddingBottom: "6px", marginBottom: "8px",
+              borderBottom: `1px dotted ${C.stone}33`,
+            }}>
+              <span style={{
+                fontFamily: fontDisplay, fontSize: "11px",
+                letterSpacing: "2px", textTransform: "uppercase", color: C.snow,
+              }}>
+                {zone.zone}
+              </span>
+              <span style={{
+                fontFamily: fontDisplay, fontSize: "10px",
+                fontStyle: "italic", color: C.textDim,
+              }}>
+                · {zone.note}
+              </span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+              {zone.spots.map((s, si) => (
+                <div key={si} style={{
+                  display: "flex", gap: "10px",
+                  padding: "8px 10px",
+                  background: `${C.midnight}88`,
+                  borderLeft: `2px solid ${accent}99`,
+                }}>
+                  <span style={{ color: accent, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>▲</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <a
+                      href={appleMapsUrl(s.query)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: "12px", color: C.iceBlue,
+                        fontWeight: 500,
+                        textDecoration: "underline",
+                        textDecorationColor: `${C.iceBlue}55`,
+                        textUnderlineOffset: "2px",
+                      }}
+                    >
+                      {s.name}
+                    </a>
+                    <div style={{ fontSize: "11px", color: C.textMuted, lineHeight: 1.45, marginTop: "2px" }}>
+                      {s.detail}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Tracks system light/dark preference and keeps `activePalette` in sync.
 // Mutating the module-level palette synchronously with setState ensures the
 // re-render below already sees the new colors via the `C` proxy.
@@ -1130,7 +1233,10 @@ filter: "blur(50px)",
           </div>
 
           {activeSection === "denali" && (
-            <ParkConditionsCard accent={section.accent} fontDisplay={fontDisplay} />
+            <>
+              <ParkConditionsCard accent={section.accent} fontDisplay={fontDisplay} />
+              <DenaliViewpointsCard accent={section.accent} fontDisplay={fontDisplay} />
+            </>
           )}
 
           {section.days.map((day, i) => {
