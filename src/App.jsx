@@ -1283,6 +1283,35 @@ filter: "blur(50px)",
             </>
           )}
 
+          {(() => {
+            // Photo-loading diagnostic strip — visible without DevTools so
+            // mobile-only users can see what the iCloud fetch is doing.
+            const totalPhotos = Object.values(photosByDate).reduce(
+              (n, ps) => n + (ps?.length || 0),
+              0
+            );
+            const tone = photosError ? C.alpenglow : C.iceBlue;
+            const label = photosError
+              ? `⚠ photos: ${photosError}`
+              : photosLoading
+              ? `… loading photos from iCloud${totalPhotos ? ` (cached: ${totalPhotos})` : ""}`
+              : totalPhotos === 0
+              ? `📷 album returned 0 photos`
+              : `📷 ${totalPhotos} photo${totalPhotos === 1 ? "" : "s"} loaded from album`;
+            return (
+              <div style={{
+                fontSize: "10px", letterSpacing: "1.5px",
+                color: tone, fontFamily: fontDisplay,
+                background: `${C.midnight}66`,
+                border: `1px solid ${tone}33`,
+                padding: "6px 12px", marginBottom: "16px",
+                textAlign: "center", textTransform: "uppercase",
+              }}>
+                {label}
+              </div>
+            );
+          })()}
+
           {section.days.map((day, i) => {
             const expanded = expandedDay === i;
             const accentColor = day.status === "booked" ? C.pineSoft : day.status === "todo" ? C.alpenglow : C.stone;
@@ -1513,13 +1542,17 @@ filter: "blur(50px)",
                         </div>
                       </div>
                     )}
-                    {past && photosLoading && dayPhotos.length === 0 && (
+                    {past && dayPhotos.length === 0 && (
                       <div style={{
                         fontSize: "10px", color: C.textDim,
                         fontStyle: "italic", marginBottom: "10px",
                         fontFamily: fontDisplay, letterSpacing: "1px",
                       }}>
-                        loading photos…
+                        {photosLoading
+                          ? "loading photos…"
+                          : photosError
+                          ? `couldn't load photos (${photosError})`
+                          : "no photos in album for this date"}
                       </div>
                     )}
                     {enrichedItems.map((entry, j) => (
