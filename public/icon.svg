@@ -2,58 +2,34 @@
   <title>Alaska Itinerary</title>
 
   <defs>
-    <!-- Twilight alpenglow sky -->
+    <!-- High-altitude daytime sky: deep navy aloft, brighter cobalt
+         toward the cloud line, matching the thin air over the Alaska Range. -->
     <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#0b1a2a"/>
-      <stop offset="42%" stop-color="#1f3a52"/>
-      <stop offset="74%" stop-color="#9b6a64"/>
-      <stop offset="92%" stop-color="#e9a279"/>
-      <stop offset="100%" stop-color="#f6c79a"/>
+      <stop offset="0%"  stop-color="#0a2552"/>
+      <stop offset="55%" stop-color="#2a6aa6"/>
+      <stop offset="100%" stop-color="#6aa8d2"/>
     </linearGradient>
 
-    <!-- Sun glow on the horizon -->
-    <radialGradient id="sun" cx="0.72" cy="0.74" r="0.36">
-      <stop offset="0%"  stop-color="#ffe2bf" stop-opacity="0.85"/>
-      <stop offset="60%" stop-color="#ffe2bf" stop-opacity="0.18"/>
-      <stop offset="100%" stop-color="#ffe2bf" stop-opacity="0"/>
-    </radialGradient>
-
-    <!-- Distant Mt. Foraker -->
-    <linearGradient id="foraker" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#f3dbc3"/>
-      <stop offset="18%" stop-color="#c9d2da"/>
-      <stop offset="55%" stop-color="#5d7a92"/>
-      <stop offset="100%" stop-color="#2a4359"/>
-    </linearGradient>
-
-    <!-- Denali's snow + rock face -->
-    <linearGradient id="denali" x1="0" y1="0" x2="0" y2="1">
+    <!-- Sunlit snow on the south/west face -->
+    <linearGradient id="snowLit" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0%"  stop-color="#ffffff"/>
-      <stop offset="22%" stop-color="#e6eef5"/>
-      <stop offset="55%" stop-color="#7693a8"/>
-      <stop offset="100%" stop-color="#1c3247"/>
+      <stop offset="50%" stop-color="#e7eef5"/>
+      <stop offset="100%" stop-color="#a9bccc"/>
     </linearGradient>
 
-    <!-- Shadowed face of Denali (east-facing, in shade) -->
-    <linearGradient id="denaliShade" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0%"  stop-color="#1a2f44"/>
-      <stop offset="100%" stop-color="#3a5670"/>
+    <!-- Shaded snow (east-facing wall, in shadow) -->
+    <linearGradient id="snowShade" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%"  stop-color="#5d7c97"/>
+      <stop offset="100%" stop-color="#a1b6c9"/>
     </linearGradient>
 
-    <!-- Foreground tundra ridge -->
-    <linearGradient id="ridge" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#1b2a1a"/>
-      <stop offset="100%" stop-color="#070c0a"/>
+    <!-- Cloud sea, with cool shadow underneath the puffy tops -->
+    <linearGradient id="cloudBase" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%"  stop-color="#f4f8fb"/>
+      <stop offset="100%" stop-color="#8197aa"/>
     </linearGradient>
 
-    <!-- Snowfield / glacier in front -->
-    <linearGradient id="glacier" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%"  stop-color="#cfe2ec"/>
-      <stop offset="100%" stop-color="#6d8ba0"/>
-    </linearGradient>
-
-    <!-- Squircle mask matches iOS home-screen shape so artwork
-         doesn't leak past the rounded corners when previewed flat. -->
+    <!-- iOS squircle so the artwork doesn't bleed past rounded corners. -->
     <clipPath id="squircle">
       <rect x="0" y="0" width="1024" height="1024" rx="224" ry="224"/>
     </clipPath>
@@ -62,95 +38,119 @@
   <g clip-path="url(#squircle)">
     <!-- Sky -->
     <rect width="1024" height="1024" fill="url(#sky)"/>
-    <rect width="1024" height="1024" fill="url(#sun)"/>
 
-    <!-- North star -->
-    <g fill="#f6e8c9" opacity="0.9">
-      <circle cx="210" cy="170" r="4"/>
-      <path d="M210 158 L212 170 L210 182 L208 170 Z"/>
-      <path d="M198 170 L210 168 L222 170 L210 172 Z"/>
-    </g>
-    <circle cx="320" cy="120" r="2.2" fill="#f6e8c9" opacity="0.7"/>
-    <circle cx="430" cy="210" r="1.6" fill="#f6e8c9" opacity="0.6"/>
-
-    <!-- Goose silhouettes, small -->
-    <g stroke="#1a2530" stroke-width="3" fill="none" opacity="0.55" stroke-linecap="round">
-      <path d="M540 250 q10 -8 20 0 q10 -8 20 0"/>
-      <path d="M620 215 q8 -6 16 0 q8 -6 16 0"/>
+    <!-- Distant Alaska Range peaks just poking above the cloud sea (far left).
+         Kept faint so the eye lands on Denali. -->
+    <g opacity="0.45">
+      <path d="M0 605 L55 555 L105 585 L155 545 L205 580 L255 558 L295 585 L0 660 Z"
+            fill="#dce6ed"/>
     </g>
 
-    <!-- Distant subordinate peak (Mt. Foraker on the left) -->
-    <path
-      d="M0 700 L0 560 L120 470 L210 540 L300 480 L380 560 L420 540 L420 760 Z"
-      fill="url(#foraker)"
-      opacity="0.92"/>
+    <!-- ─── DENALI MASSIF ─────────────────────────────────────────────
+         Twin-summited profile, from south-southwest viewing angle:
+           • Broad rounded SOUTH SUMMIT dome (20,310 ft) on the left
+           • Wide shallow DENALI PASS saddle in the middle
+           • Slightly sharper but still rounded NORTH SUMMIT (19,470 ft) right
+           • Long sweeping shoulders descending to the cloud sea.
+         Lower, wider proportions than a generic mountain — Denali reads
+         as a massive low dome, not a sharp pyramid.
+    ─────────────────────────────────────────────────────────────────── -->
+    <path d="
+      M90 660
+      L180 605
+      L255 555
+      Q310 510 360 470
+      Q415 405 470 388
+      Q525 380 565 408
+      Q600 432 625 460
+      Q655 432 690 418
+      Q730 410 760 442
+      Q790 470 825 505
+      Q865 540 910 575
+      L965 615
+      L965 1024 L90 1024 Z" fill="url(#snowLit)"/>
 
-    <!-- Denali — the Great One. Broad twin-summited massif. -->
-    <!-- Lit (south/west) face -->
-    <path
-      d="M180 760
-         L300 660
-         L420 560
-         L520 360
-         L600 240
-         L680 360
-         L760 480
-         L860 600
-         L980 760 Z"
-      fill="url(#denali)"/>
+    <!-- Shaded east-facing wedge: a soft band of cooler snow along the
+         east aspects of both summits, giving the massif dimension. -->
+    <path d="
+      M470 388
+      Q525 380 565 408
+      Q600 432 625 460
+      Q655 432 690 418
+      Q730 410 760 442
+      Q790 470 825 505
+      L780 540
+      L720 500
+      L660 480
+      L620 495
+      L580 470
+      L540 440
+      L500 412 Z" fill="url(#snowShade)" opacity="0.55"/>
 
-    <!-- Shaded (east) face wedge, gives the peak dimension -->
-    <path
-      d="M600 240
-         L680 360
-         L760 480
-         L860 600
-         L980 760
-         L800 760
-         L740 640
-         L660 500
-         L620 380 Z"
-      fill="url(#denaliShade)"
-      opacity="0.75"/>
+    <!-- Crisp summit ridge highlight (cornice catching full sun) -->
+    <path d="
+      M360 470
+      Q415 405 470 388
+      Q525 380 565 408
+      Q600 432 625 460
+      Q655 432 690 418
+      Q730 410 760 442"
+      stroke="#ffffff" stroke-width="7" fill="none"
+      opacity="0.95" stroke-linejoin="round" stroke-linecap="round"/>
 
-    <!-- Snow-cornice highlight along the summit ridge -->
-    <path
-      d="M520 360 L600 240 L680 360 L640 360 L600 295 L560 360 Z"
-      fill="#ffffff"
-      opacity="0.9"/>
-
-    <!-- Soft alpenglow blush on the lit (sun-facing) flank -->
-    <path
-      d="M180 760
-         L300 660
-         L420 560
-         L520 360
-         L600 295
-         L560 360
-         L520 430
-         L470 540
-         L380 660
-         L260 760 Z"
-      fill="#f1c9a5"
-      opacity="0.18"/>
-
-    <!-- Foreground glacier / snowfield -->
-    <path
-      d="M0 880 L0 800 L160 770 L320 800 L520 760 L720 790 L900 770 L1024 800 L1024 880 Z"
-      fill="url(#glacier)"/>
-
-    <!-- Foreground dark tundra ridge with a few spruce -->
-    <path
-      d="M0 1024 L0 870 L120 855 L260 875 L420 850 L600 875 L760 855 L900 870 L1024 855 L1024 1024 Z"
-      fill="url(#ridge)"/>
-
-    <!-- Spruce silhouettes on the ridge -->
-    <g fill="#050a07">
-      <path d="M150 870 l-12 28 h24 z M150 882 l-14 30 h28 z M150 895 l-16 32 h32 z"/>
-      <path d="M340 855 l-10 24 h20 z M340 866 l-12 26 h24 z M340 878 l-14 28 h28 z"/>
-      <path d="M540 868 l-11 26 h22 z M540 880 l-13 28 h26 z M540 893 l-15 30 h30 z"/>
-      <path d="M740 858 l-10 24 h20 z M740 869 l-12 26 h24 z M740 881 l-14 28 h28 z"/>
-      <path d="M880 866 l-10 24 h20 z M880 877 l-12 26 h24 z M880 889 l-14 28 h28 z"/>
+    <!-- Soft shoulder shadow lines suggesting glacier-carved ribs
+         descending from the summit. No floating rocks — just subtle
+         tonal variation that vanishes cleanly at small sizes. -->
+    <g stroke="#86a0b6" stroke-width="3" fill="none" opacity="0.2"
+       stroke-linecap="round">
+      <path d="M430 470 Q400 545 350 625"/>
+      <path d="M720 475 Q760 545 820 615"/>
+      <path d="M520 470 Q510 555 485 640"/>
+      <path d="M635 470 Q650 555 690 635"/>
     </g>
+
+    <!-- ─── SEA OF CLOUDS ─────────────────────────────────────────────
+         Layered undercast: the massif's lower glaciers are buried in it.
+    ─────────────────────────────────────────────────────────────────── -->
+    <!-- Back horizon line (bumpy) -->
+    <path d="
+      M0 655
+      Q60 615 130 640
+      Q200 605 285 635
+      Q360 612 430 640
+      Q500 612 580 640
+      Q660 612 740 640
+      Q820 612 900 640
+      Q970 622 1024 638
+      L1024 1024 L0 1024 Z" fill="url(#cloudBase)"/>
+
+    <!-- Mid-layer puffy tops, just above the horizon -->
+    <g fill="#ffffff">
+      <ellipse cx="80"  cy="710" rx="130" ry="50"/>
+      <ellipse cx="245" cy="695" rx="140" ry="46"/>
+      <ellipse cx="405" cy="715" rx="150" ry="50"/>
+      <ellipse cx="575" cy="695" rx="145" ry="46"/>
+      <ellipse cx="740" cy="715" rx="150" ry="50"/>
+      <ellipse cx="905" cy="700" rx="140" ry="46"/>
+    </g>
+
+    <!-- Foreground cumulus bumps -->
+    <g fill="#ffffff">
+      <ellipse cx="135" cy="800" rx="190" ry="62"/>
+      <ellipse cx="380" cy="815" rx="210" ry="68"/>
+      <ellipse cx="640" cy="805" rx="210" ry="68"/>
+      <ellipse cx="890" cy="820" rx="190" ry="62"/>
+    </g>
+
+    <!-- Cool shadow underneath each cumulus bump for volume -->
+    <g fill="#7a90a3" opacity="0.28">
+      <ellipse cx="135" cy="855" rx="190" ry="18"/>
+      <ellipse cx="380" cy="870" rx="210" ry="20"/>
+      <ellipse cx="640" cy="860" rx="210" ry="20"/>
+      <ellipse cx="890" cy="875" rx="190" ry="18"/>
+    </g>
+
+    <!-- Solid cloud floor so the bottom of the icon is fully covered -->
+    <rect x="0" y="868" width="1024" height="160" fill="#ffffff"/>
   </g>
 </svg>
