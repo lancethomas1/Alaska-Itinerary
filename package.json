@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:public": "node scripts/gen-public-trip-data.mjs && VITE_PUBLIC_MODE=1 vite build --base=/Alaska-Itinerary/s/friends-hemhb3ts/ --outDir=dist/s/friends-hemhb3ts",
     "preview": "vite preview",
     "photos:manifest": "node scripts/build-photos-manifest.mjs"
   },

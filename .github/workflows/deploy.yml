@@ -42,6 +42,11 @@ jobs:
 
       - run: npm run build
 
+      # Public-facing share build: same itinerary with all dollar amounts
+      # and the costs panel scrubbed out. Lands inside the main dist/ at
+      # the obscure slug path so it ships as part of the same Pages deploy.
+      - run: npm run build:public
+
       - uses: actions/configure-pages@v5
 
       - uses: actions/upload-pages-artifact@v3
