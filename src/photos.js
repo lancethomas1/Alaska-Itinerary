@@ -11,7 +11,7 @@
 import { useEffect, useState } from "react";
 import manifest from "./photos-manifest.json";
 
-const STORAGE_KEY = "alaska-photos-v3";
+const STORAGE_KEY = "alaska-photos-v4";
 const GEOCODE_KEY = "alaska-geocode-v1";
 
 const TRIP_YEAR = 2026;
