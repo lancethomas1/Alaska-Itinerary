@@ -279,7 +279,7 @@ cruise: [
 "Magnetic hooks + over-the-door organizer (cabin storage)",
 "Wrinkle-release spray + small lint roller",
 "Passport, cruise docs & travel insurance in waterproof folder",
-"Highland Princess / Celebrity app preloaded on phone",
+"Celebrity Cruises app preloaded on phone (check-in + boarding pass)",
 "Cash + cards for tipping porters and shore guides",
 ],
 denali: [
