@@ -1,306 +1,15 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { usePhotos, isPastDay, enhanceItems } from "./photos.js";
+// "~trip-data" resolves to ./trip-data.js for the normal build and to the
+// pre-sanitized ./trip-data.public.js for the public share build — see
+// vite.config.js. That keeps cost figures out of the public bundle entirely
+// rather than just hidden from the rendered UI.
+import TRIP_DATA from "~trip-data";
 
-const TRIP_DATA = {
-flights: {
-outbound: {
-airline: "Air Canada",
-conf: "CH3D3P",
-date: "May 6, 2026",
-route: "Miami → Vancouver",
-details: "AC1755 direct ~7 hr. Departs 6:10 PM MIA, arrives 10:00 PM YVR.",
-},
-return: {
-airline: "United",
-conf: "F8LP9X",
-date: "May 17–18, 2026",
-route: "Anchorage → Chicago → Fort Lauderdale",
-details: "UA267 ANC→ORD 8:45 PM | UA1421 ORD→FLL 7:00 AM. Seats 29D/29E & 39A/39B.",
-},
-},
-costs: [
-// Prepaid bookings
-{ label: "Celebrity Summit cruise (ECR)", amount: 835.96 },
-{ label: "Shore excursions (Ketchikan + Sitka)", amount: 963.96 },
-{ label: "ANC Airport Transfer by Train", amount: 161.98 },
-{ label: "Grande Denali Lodge (2 nights)", amount: 793.35 },
-{ label: "Enterprise rental car (Denali)", amount: 169.15 },
-{ label: "Fly Denali — Glacier Landing", amount: 1558.00 },
-{ label: "Air Canada flights + bags", amount: 684.79 },
-{ label: "United return flights", amount: 578.80 },
-// In-trip posted spending (from CSV)
-{ label: "MIA airport meals + Lyft", amount: 91.76 },
-{ label: "Vancouver — dining, hotel, transit, bikes", amount: 424.64 },
-{ label: "Celebrity Summit — onboard charges", amount: 99.75 },
-{ label: "Ketchikan — souvenirs", amount: 5.39 },
-{ label: "Sitka — dining", amount: 125.62 },
-{ label: "Juneau (May 12) — food & gas", amount: 62.65 },
-{ label: "Explore Juneau rental car (placeholder)", amount: 230.00 },
-],
-sections: [
-{
-id: "cruise",
-emoji: "🚢",
-title: "Celebrity Summit",
-subtitle: "Alaska Inside Passage",
-dates: "May 6–15, 2026",
-color: "#1d3d52",
-accent: "#6fb5cf",
-days: [
-{
-date: "May 6",
-day: "Travel Day",
-location: "Miami → Vancouver",
-icon: "✈️",
-weather: { icon: "⛅", hi: 64, lo: 52, desc: "Vancouver actual: mostly cloudy on arrival, 57°F observed at 8 PM. Miami: warm evening departure ~85°F." },
-astro: { sunrise: "5:43 AM", sunset: "8:35 PM", moon: "🌖", phase: "Waning Gibbous" },
-items: [
-"Depart MIA 6:10 PM on Air Canada AC1755",
-"Arrive YVR ~10:00 PM PDT",
-"Check in: Executive Hotel Le Soleil (Hopper conf: MB7DX5Z5N5PV)",
-"567 Hornby St, Vancouver — 2 nights",
-],
-status: "booked",
-},
-{
-date: "May 7",
-day: "Vancouver",
-location: "Vancouver, BC",
-icon: "🏙️",
-weather: { icon: "🌦️", hi: 63, lo: 52, desc: "Actual: mix of sun & cloud with periods of drizzle. Cool morning, milder afternoon. (Environment Canada)" },
-astro: { sunrise: "5:41 AM", sunset: "8:36 PM", moon: "🌖", phase: "Waning Gibbous" },
-items: [
-"Stanley Park — bike or walk the seawall",
-"Uber to Granville Island food market",
-"Walk back via waterfront",
-"Pre-cruise dinner downtown",
-],
-status: "booked",
-},
-{
-date: "May 8",
-day: "Embarkation",
-location: "Vancouver, BC",
-icon: "⚓",
-weather: { icon: "☁️", hi: 61, lo: 50, desc: "Actual: cloudy with light drizzle — classic Vancouver embarkation weather. Mild for sailaway." },
-astro: { sunrise: "5:39 AM", sunset: "8:38 PM", moon: "🌖", phase: "Waning Gibbous" },
-items: [
-"Hotel checkout AM",
-"Canada Place cruise terminal, 999 Canada Pl",
-"Boarding opens late morning",
-"Celebrity Summit sails at 5:00 PM",
-],
-status: "booked",
-},
-{
-date: "May 9",
-day: "Sea Day",
-location: "Inside Passage",
-icon: "🌊",
-weather: { icon: "⛅", hi: 58, lo: 46, desc: "Actual: calm seas through Inside Passage. Partly cloudy, light winds. Ridge of high pressure building over panhandle." },
-astro: { sunrise: "4:56 AM", sunset: "8:32 PM", moon: "🌗", phase: "Last Quarter" },
-items: [
-"Scenic fjord cruising — bring binoculars",
-"Watch for humpback whales, orcas, sea otters",
-"Explore ship amenities — spa, pools, shows",
-"Book specialty dining if not done",
-],
-status: "none",
-},
-{
-date: "May 10",
-day: "Ketchikan",
-location: "Ketchikan, AK  7AM–3PM",
-icon: "🐟",
-weather: { icon: "⛅", hi: 50, lo: 42, desc: "Actual: pleasant surprise — high-pressure ridge held off the rain. Mostly cloudy with sun breaks, dry conditions (rare for Ketchikan!)." },
-astro: { sunrise: "4:47 AM", sunset: "8:39 PM", moon: "🌗", phase: "Last Quarter" },
-items: [
-"✅ BOOKED: Wilderness Exploration & Crab Feast — 9:00 AM — $503.98",
-"Order #211686852 (Celebrity Shorex)",
-"World's largest collection of standing totem poles",
-"Creek Street historic boardwalk",
-],
-status: "booked",
-},
-{
-date: "May 11",
-day: "Sitka",
-location: "Sitka, AK  7AM–3:30PM",
-icon: "🦅",
-weather: { icon: "⛅", hi: 50, lo: 42, desc: "Actual: mostly cloudy but dry, light winds. Ideal kayaking conditions on calm water." },
-astro: { sunrise: "4:51 AM", sunset: "9:04 PM", moon: "🌘", phase: "Waning Crescent" },
-items: [
-"✅ BOOKED: Wilderness Sea Kayaking Adventure — 8:30 AM — $459.98",
-"Order #211686852 (Celebrity Shorex)",
-"St. Michael's Cathedral — Russian heritage",
-"Sitka National Historical Park",
-],
-status: "booked",
-},
-{
-date: "May 12",
-day: "Juneau",
-location: "Juneau, AK  7AM–9:30PM",
-icon: "🏔️",
-weather: { icon: "☀️", hi: 60, lo: 42, desc: "Actual: SUNNY & BEAUTIFUL ☀️ High-pressure ridge cleared the skies. Mostly sunny all day, light winds — perfect for the Mendenhall + Eagle Beach drive." },
-astro: { sunrise: "4:38 AM", sunset: "9:09 PM", moon: "🌘", phase: "Waning Crescent" },
-items: [
-"✅ DONE — self-drive day via Explore Juneau rental (Booking 019e1d2a)",
-"✓ Mendenhall Glacier & Nugget Falls",
-"✓ Lunch — Forbidden Peak Brewery",
-"✓ Eagle Beach",
-"✓ Shrine of St. Therese",
-"✓ Perseverance Trail",
-"✓ Point Bridget / Outer Point Loop",
-"Spent today: $62.65 (food/gas) · car rental ~$230 placeholder",
-],
-status: "booked",
-},
-{
-date: "May 13",
-day: "Icy Strait Point",
-location: "Icy Strait Point, AK  7AM–5PM",
-icon: "🐻",
-weather: { icon: "🌤️", hi: 55, lo: 42, desc: "Cloudy AM clearing to mostly sunny PM. Light NE wind. Improving conditions — best port-day weather of the week. (NWS Glacier Bay zone)" },
-astro: { sunrise: "4:41 AM", sunset: "9:14 PM", moon: "🌘", phase: "Waning Crescent", tides: [{type:"L",time:"5:12 AM",h:1.1}, {type:"H",time:"11:17 AM",h:12.5}, {type:"L",time:"5:16 PM",h:2.1}, {type:"H",time:"11:27 PM",h:15.2}] },
-items: [
-"⚠️ TODO — book shore excursion",
-"Tlingit-owned port near Hoonah",
-"Options: ZipRider, gondola, whale watching, brown bears",
-"Fortress of the Bear sanctuary nearby",
-],
-status: "todo",
-},
-{
-date: "May 14",
-day: "Hubbard Glacier",
-location: "Hubbard Glacier  6AM–10AM",
-icon: "🧊",
-weather: { icon: "🌧️", hi: 47, lo: 40, desc: "Rain, mostly cloudy. Yakutat area staying wet while rest of panhandle dries out. Bundle up — wind chill on deck near the glacier will feel much colder. (NWS Glacier Bay zone)" },
-astro: { sunrise: "4:43 AM", sunset: "9:45 PM", moon: "🌘", phase: "Waning Crescent" },
-items: [
-"Scenic cruising in Disenchantment Bay",
-"Be on deck early — 6 AM for best views",
-"Watch for calving — glacier face is 6 miles wide",
-"Largest tidewater glacier in North America",
-],
-status: "none",
-},
-{
-date: "May 15",
-day: "Disembark → Denali",
-location: "Whittier → Anchorage → Denali",
-icon: "🚂",
-weather: { icon: "🌦️", hi: 50, lo: 38, desc: "Showers possible Whittier AM, drying as you head north through the Whittier Tunnel and up the Seward Hwy. Denali arrival: mostly sunny, high ~49°F. (NWS Whittier + Denali Park)" },
-astro: { sunrise: "5:10 AM", sunset: "10:33 PM", moon: "🌘", phase: "Waning Crescent", tides: [{type:"H",time:"12:15 AM",h:13.2}, {type:"L",time:"7:00 AM",h:-2.1}, {type:"H",time:"1:17 PM",h:10.8}, {type:"L",time:"6:57 PM",h:1.7}] },
-items: [
-"⚠️ VERIFY with Celebrity: Transfer Whittier → Anchorage (was Seward; Order #210829304) — confirm new departure time/method (motorcoach vs train)",
-"Arrive Anchorage — earlier than original Seward plan (~1h15 drive via Whittier Tunnel + Seward Hwy vs. 2.5h Seward train)",
-"Enterprise rental car pickup 1 PM — Conf #71517672",
-"Drive Parks Hwy to Denali (~4–5 hrs) → Grande Denali Lodge (HA463X0AM)",
-],
-status: "booked",
-},
-],
-},
-{
-id: "denali",
-emoji: "🦌",
-title: "Denali",
-subtitle: "The Great One",
-dates: "May 15–17, 2026",
-color: "#2a4a35",
-accent: "#8fc99d",
-days: [
-{
-date: "May 15",
-day: "Arrival Evening",
-location: "Grande Denali Lodge",
-icon: "🏔️",
-weather: { icon: "🌤️", hi: 49, lo: 39, desc: "Mostly sunny on arrival. Cool overnight near 39°F. Good chance Denali is out — keep eyes north! (NWS Denali Park, issued May 12)" },
-items: [
-"Arrive Grande Denali Lodge — Conf HA463X0AM",
-"Evening walk: Horseshoe Lake Trail (~1.5 hrs, easy)",
-"Watch for moose at dusk",
-"Long daylight — sunset around 10:30 PM in mid-May",
-],
-status: "booked",
-},
-{
-date: "May 16",
-day: "Full Denali Day",
-location: "Denali National Park",
-icon: "🐻",
-weather: { icon: "⛅", hi: 51, lo: 40, desc: "Mostly cloudy, dry. Decent flightseeing conditions if cloud ceiling holds — Fly Denali will assess pre-flight. (NWS Denali Park)" },
-astro: { sunrise: "4:42 AM", sunset: "11:01 PM", moon: "🌑", phase: "New Moon" },
-items: [
-"Morning: Open — slow breakfast at lodge, short walk on Horseshoe Lake or Riley Creek trails",
-"~11:15 AM — Free shuttle from lodge to Healy River Airport for Fly Denali check-in",
-"✅ 12:00 PM — Fly Denali Glacier Landing (Res. IOR0BL) — $1,558 for 2 · 100 min + 20–30 min on Ruth Glacier (rescheduled from 8:30 AM)",
-"~2:45 PM — Wheels down at Healy · late lunch back at lodge or in Healy",
-"PM: Savage River Loop (Mile 15) if energy holds, or relax at lodge",
-],
-status: "booked",
-},
-{
-date: "May 17",
-day: "Morning & Depart",
-location: "Denali → Anchorage",
-icon: "🌅",
-weather: { icon: "🌦️", hi: 50, lo: 38, desc: "Slight chance of showers after 10 AM. Get sled dog demo done before noon — drive south stays dry. (NWS Denali Park)" },
-astro: { sunrise: "4:57 AM", sunset: "10:47 PM", moon: "🌑", phase: "New Moon" },
-items: [
-"Morning: Sled Dog Demo 10 AM (free) or Savage River Loop — depart lodge by noon",
-"~1:30 PM — Denali Viewpoint South pullout (Mile 134–135) — panoramic Alaska Range views, 10 min",
-"~1:50 PM — Broad Pass — highest point on Parks Hwy, open tundra, moose/caribou possible",
-"~2:30 PM — Talkeetna (14-mile spur off hwy) — best ground-level Denali views, lunch on Main St, 50 min",
-"~5:30–6:00 PM — ANC airport · Return Enterprise by 7 PM · Fly UA267 8:45 PM",
-],
-status: "none",
-},
-],
-},
-],
-packing: {
-cruise: [
-"Formal wear (2 nights)",
-"Rain jacket + waterproof layers",
-"Comfortable walking shoes for ports",
-"Binoculars for wildlife & glaciers",
-"Seasickness meds/bands",
-"Tote bag for port days",
-"Sunscreen (UV reflects off water)",
-"Camera + extra batteries",
-],
-denali: [
-"Waterproof hiking boots",
-"Warm layers (30–55°F in May)",
-"Gloves, hat, buff neck gaiter",
-"Sunglasses (glacier glare is intense)",
-"Camera with long zoom for wildlife",
-"Insect repellent",
-"Daypack",
-"Snacks & reusable water bottle",
-],
-},
-todos: [
-{ id: 1, text: "Juneau — self-drove (Explore Juneau, Booking 019e1d2a): Mendenhall + Nugget Falls + Forbidden Peak + Eagle Beach + St. Therese + Perseverance + Outer Point Loop", done: true, priority: "high" },
-{ id: 2, text: "Book Icy Strait Point shore excursion", done: false, priority: "high" },
-{ id: 4, text: "Whittier → Anchorage transfer via Celebrity — Order #210829304 (originally Seward; verify rebooked details and time)", done: false, priority: "high" },
-{ id: 5, text: "Resolve Enterprise account-issue banner before May 15", done: false, priority: "high" },
-{ id: 6, text: "Check passport expiry (both Lance & Betsy)", done: false, priority: "high" },
-{ id: 7, text: "Pack formal wear for cruise dinners", done: false, priority: "medium" },
-{ id: 8, text: "Get travel insurance", done: false, priority: "medium" },
-{ id: 9, text: "Download Celebrity Cruises app + check in online", done: true, priority: "medium" },
-{ id: 10, text: "Air Canada flight booked — CH3D3P (MIA→YVR)", done: true, priority: "high" },
-{ id: 11, text: "United return flights booked — F8LP9X (ANC→ORD→FLL)", done: true, priority: "high" },
-{ id: 12, text: "Grande Denali Lodge booked — HA463X0AM", done: true, priority: "high" },
-{ id: 13, text: "Enterprise rental car booked — Conf #71517672", done: true, priority: "high" },
-{ id: 14, text: "Ketchikan excursion booked — Wilderness & Crab Feast", done: true, priority: "high" },
-{ id: 15, text: "Sitka excursion booked — Wilderness Sea Kayaking", done: true, priority: "high" },
-{ id: 16, text: "Fly Denali Glacier Landing booked — Res. IOR0BL (rescheduled to May 16 noon)", done: true, priority: "high" },
-],
-};
+// Public share build hides the costs panel + tweaks Aurora's prompt. The
+// actual data scrubbing happens at build time via the import alias above.
+const PUBLIC_MODE = import.meta.env.VITE_PUBLIC_MODE === "1";
+
 
 // ─── Color tokens ─────────────────────────────────────────
 // Two semantic palettes share the same token names so every `C.x` reference
@@ -1055,7 +764,7 @@ function TripChat({ tripData, fontDisplay, fontBody, sectionAccent }) {
     () =>
       `You are Aurora, a warm and concise travel concierge for Lance & Betsy Thomas's Alaska expedition (May 6–18, 2026, celebrating Betsy's 40th birthday). Today is ${todayLabel}.
 
-You have full knowledge of their itinerary, flights, costs, packing lists, and to-dos via the JSON below. Answer questions about their trip using only this context; if asked about something not in the data, say so honestly rather than inventing details.
+You have full knowledge of their itinerary, flights, ${PUBLIC_MODE ? "" : "costs, "}packing lists, and to-dos via the JSON below. Answer questions about their trip using only this context; if asked about something not in the data, say so honestly rather than inventing details.${PUBLIC_MODE ? " This is a public-facing copy of the itinerary, so cost or pricing details have been intentionally excluded — if asked about them, politely say they aren't part of this view." : ""}
 
 Style: short, friendly replies (typically 2–4 sentences). Plain text or simple bullet lists — no markdown headings. Mention specific dates, places, or confirmation numbers when relevant.
 
@@ -1211,7 +920,7 @@ ${JSON.stringify(tripData, null, 2)}`,
   // ── Chat state ──────────────────────────────────────────
   const examples = [
     "What's on the agenda for May 12?",
-    "How much have we spent so far?",
+    PUBLIC_MODE ? "Where are we staying in Vancouver?" : "How much have we spent so far?",
     "What's the weather like in Sitka?",
     "What still needs to be booked?",
   ];
@@ -1541,6 +1250,7 @@ filter: "blur(50px)",
           ))}
         </div>
 
+        {!PUBLIC_MODE && (
         <div
           onClick={() => setShowCosts(!showCosts)}
           style={{
@@ -1552,8 +1262,9 @@ filter: "blur(50px)",
         >
           ◈ ${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })} spent · ISP excursion TBD {showCosts ? "▲" : "▼"}
         </div>
+        )}
 
-        {showCosts && (
+        {!PUBLIC_MODE && showCosts && (
           <div style={{
             background: `${C.midnight}cc`, border: `1px solid ${C.pineSoft}30`,
             padding: "16px 18px", marginTop: "10px", textAlign: "left",
