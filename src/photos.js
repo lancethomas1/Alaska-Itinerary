@@ -25,12 +25,6 @@ const MONTHS = [
 // OffsetTimeOriginal is present, which modern iPhones always include).
 const MATCH_TOLERANCE_MS = 5 * 60 * 1000;
 
-// Number of trailing photos (after chronological sort) to drop from each
-// date key. Use to suppress accidental album uploads without re-syncing.
-const HIDDEN_TRAILING = {
-  "May 12": 1,
-};
-
 function loadCache(key) {
   try {
     if (typeof localStorage === "undefined") return null;
@@ -166,9 +160,6 @@ export function usePhotos() {
         }
         for (const ps of Object.values(groups)) {
           ps.sort((a, b) => new Date(a.dateCreated) - new Date(b.dateCreated));
-        }
-        for (const [k, n] of Object.entries(HIDDEN_TRAILING)) {
-          if (groups[k] && n > 0) groups[k] = groups[k].slice(0, -n);
         }
 
         const manifestEntries = manifest?.entries || [];
