@@ -1544,10 +1544,7 @@ filter: "blur(50px)",
           </div>
 
           {activeSection === "denali" && (
-            <>
-              <ParkConditionsCard accent={section.accent} fontDisplay={fontDisplay} />
-              <DenaliViewpointsCard accent={section.accent} fontDisplay={fontDisplay} />
-            </>
+            <ParkConditionsCard accent={section.accent} fontDisplay={fontDisplay} />
           )}
 
           {(() => {
@@ -1864,6 +1861,10 @@ filter: "blur(50px)",
             );
           })}
           </ul>
+
+          {activeSection === "denali" && (
+            <DenaliViewpointsCard accent={section.accent} fontDisplay={fontDisplay} />
+          )}
         </div>
       )}
 
