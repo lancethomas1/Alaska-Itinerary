@@ -64,6 +64,24 @@ function detectInitialPalette() {
 
 let activePalette = detectInitialPalette();
 
+// Per-section accent colors in trip-data.js (e.g. Denali's `#8fc99d`) are tuned
+// against the dark background. Used as TEXT on the light palette they fall
+// well below WCAG AA. `readableAccent` returns a darkened variant in light
+// mode for text only — borders and icons keep the raw accent.
+function readableAccent(hex) {
+  if (!hex || hex[0] !== "#" || activePalette !== LIGHT_PALETTE) return hex;
+  const n = hex.length === 4
+    ? hex.slice(1).split("").map((c) => c + c).join("")
+    : hex.slice(1, 7);
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+  if (lum < 130) return hex;
+  const to = (v) => Math.round(v * 0.32).toString(16).padStart(2, "0");
+  return `#${to(r)}${to(g)}${to(b)}`;
+}
+
 // Proxy so every `C.x` access reads the current palette. Inline styles
 // re-evaluate on each render, so swapping `activePalette` + a re-render
 // flips the whole UI.
@@ -543,11 +561,12 @@ function ParkConditionsCard({ accent, fontDisplay }) {
         gap: "10px", marginBottom: "4px",
       }}>
         <h2 id="park-conditions-heading" style={{
-          fontFamily: fontDisplay, fontSize: "10px",
-          letterSpacing: "3px", textTransform: "uppercase", color: accent,
-          margin: 0, fontWeight: "normal",
+          fontFamily: fontDisplay, fontSize: "12px",
+          letterSpacing: "1.8px", textTransform: "uppercase",
+          color: readableAccent(accent),
+          margin: 0, fontWeight: 600,
         }}>
-          <span aria-hidden="true">◈ </span>Park Conditions
+          <span aria-hidden="true" style={{ color: accent }}>◈ </span>Park Conditions
         </h2>
         <button
           onClick={refresh}
@@ -663,11 +682,12 @@ function DenaliViewpointsCard({ accent, fontDisplay }) {
       marginBottom: "16px",
     }}>
       <h2 id="summit-viewpoints-heading" style={{
-        fontFamily: fontDisplay, fontSize: "10px",
-        letterSpacing: "3px", textTransform: "uppercase", color: accent,
-        marginBottom: "4px", margin: 0, fontWeight: "normal",
+        fontFamily: fontDisplay, fontSize: "12px",
+        letterSpacing: "1.8px", textTransform: "uppercase",
+        color: readableAccent(accent),
+        marginBottom: "4px", margin: 0, fontWeight: 600,
       }}>
-        <span aria-hidden="true">◈ </span>Summit Viewpoints
+        <span aria-hidden="true" style={{ color: accent }}>◈ </span>Summit Viewpoints
       </h2>
       <div style={{
         fontFamily: fontDisplay, fontStyle: "italic",
@@ -874,8 +894,8 @@ ${JSON.stringify(tripData, null, 2)}`,
       <section aria-labelledby="aurora-heading">
         <div style={{ textAlign: "center", marginBottom: "20px", fontFamily: fontDisplay }}>
           <h2 id="aurora-heading" style={{
-            fontSize: "11px", color: accent, letterSpacing: "4px",
-            textTransform: "uppercase", margin: 0, fontWeight: "normal",
+            fontSize: "13px", color: readableAccent(accent), letterSpacing: "2.5px",
+            textTransform: "uppercase", margin: 0, fontWeight: 600,
           }}>
             Aurora · Trip Concierge
           </h2>
@@ -959,8 +979,8 @@ ${JSON.stringify(tripData, null, 2)}`,
     <section aria-labelledby="aurora-chat-heading">
       <div style={{ textAlign: "center", marginBottom: "16px", fontFamily: fontDisplay }}>
         <h2 id="aurora-chat-heading" style={{
-          fontSize: "11px", color: accent, letterSpacing: "4px",
-          textTransform: "uppercase", margin: 0, fontWeight: "normal",
+          fontSize: "13px", color: readableAccent(accent), letterSpacing: "2.5px",
+          textTransform: "uppercase", margin: 0, fontWeight: 600,
         }}>
           Aurora · Trip Concierge
         </h2>
@@ -1530,8 +1550,8 @@ filter: "blur(50px)",
         <div role="tabpanel" id="panel-itinerary" aria-labelledby="tab-itinerary" tabIndex={0}>
           <div style={{ textAlign: "center", marginBottom: "20px", fontFamily: fontDisplay }}>
             <h2 style={{
-              fontSize: "11px", color: section.accent, letterSpacing: "4px",
-              textTransform: "uppercase", margin: 0, fontWeight: "normal",
+              fontSize: "13px", color: readableAccent(section.accent), letterSpacing: "2.5px",
+              textTransform: "uppercase", margin: 0, fontWeight: 600,
             }}>
               {section.subtitle}
             </h2>
@@ -1891,7 +1911,7 @@ filter: "blur(50px)",
                     }}>
                       {sec.title}
                     </h2>
-                    <div style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "2.5px", color: sec.accent, textTransform: "uppercase", marginTop: "3px" }}>
+                    <div style={{ fontSize: "12px", fontWeight: 600, letterSpacing: "1.8px", color: sec.accent, textTransform: "uppercase", marginTop: "3px" }}>
                       Field Pack List
                     </div>
                   </div>
