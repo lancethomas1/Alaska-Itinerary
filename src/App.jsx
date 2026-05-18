@@ -15,6 +15,9 @@ const PUBLIC_MODE = import.meta.env.VITE_PUBLIC_MODE === "1";
 // Two semantic palettes share the same token names so every `C.x` reference
 // stays valid in either theme. `midnight`/`deepFjord`/`fjord` are always
 // "background-ish", `snow` is always "primary text", etc.
+// Contrast targets (on the section's typical background):
+//   textMuted / textDim must clear WCAG AA (≥4.5:1 for body, ≥3:1 for large)
+//   against `midnight`. Earlier values for `textDim` failed AA on dark mode.
 const DARK_PALETTE = {
   midnight: "#08151f",
   deepFjord: "#0e2435",
@@ -24,31 +27,31 @@ const DARK_PALETTE = {
   mist: "#d8e6ec",
   snow: "#f1f6f9",
   pineDeep: "#1a3025",
-  pineSoft: "#5a8a6b",
-  alpenglow: "#ed9874",
+  pineSoft: "#7aa68b",
+  alpenglow: "#f0a584",
   alpenglowSoft: "#f4b89a",
-  gold: "#e9c178",
-  stone: "#6b8090",
-  textMuted: "#8fb0c2",
-  textDim: "#5d7f93",
+  gold: "#f0cf95",
+  stone: "#8aa0b0",
+  textMuted: "#a8c2d1",
+  textDim: "#8aa6b8",
 };
 
 const LIGHT_PALETTE = {
   midnight: "#eef4f8",
   deepFjord: "#dde8ef",
   fjord: "#c5d6e1",
-  glacier: "#3d7993",
-  iceBlue: "#2a5970",
-  mist: "#3d556a",
+  glacier: "#1f5670",
+  iceBlue: "#1f4a60",
+  mist: "#2d4356",
   snow: "#0c1a26",
   pineDeep: "#c8d9c9",
-  pineSoft: "#3d6048",
-  alpenglow: "#b95a32",
-  alpenglowSoft: "#8c4423",
-  gold: "#8e6b1c",
-  stone: "#506578",
-  textMuted: "#4a6478",
-  textDim: "#5a7587",
+  pineSoft: "#2f5039",
+  alpenglow: "#a04a25",
+  alpenglowSoft: "#7a3a1d",
+  gold: "#6a4f0e",
+  stone: "#3f5366",
+  textMuted: "#37516a",
+  textDim: "#4a6378",
 };
 
 // Resolve initial palette synchronously so first render matches system.
@@ -89,6 +92,20 @@ const priorityColors = {
   get medium() { return C.gold; },
   get low() { return C.pineSoft; },
 };
+
+// Visually hides text but keeps it available to screen readers.
+const SR_ONLY_STYLE = {
+  position: "absolute",
+  width: 1,
+  height: 1,
+  padding: 0,
+  margin: -1,
+  overflow: "hidden",
+  clip: "rect(0,0,0,0)",
+  whiteSpace: "nowrap",
+  border: 0,
+};
+const SrOnly = ({ children }) => <span style={SR_ONLY_STYLE}>{children}</span>;
 
 // Strip trailing time ranges (e.g. "Ketchikan, AK  7AM–3PM") so Apple Maps
 // gets a clean query, and build a universal maps.apple.com URL that opens
@@ -200,7 +217,8 @@ return (
 viewBox="0 0 800 280"
 preserveAspectRatio="none"
 style={{ width: "100%", height: "180px", display: "block", position: "absolute", top: 0, left: 0 }}
-aria-hidden
+aria-hidden="true"
+focusable="false"
 >
 <defs>
 <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
@@ -263,7 +281,7 @@ aria-hidden
 
 function EagleMotif({ size = 22, color = C.glacier, opacity = 0.55 }) {
 return (
-<svg width={size} height={size * 0.5} viewBox="0 0 40 20" style={{ opacity }}>
+<svg width={size} height={size * 0.5} viewBox="0 0 40 20" style={{ opacity }} aria-hidden="true" focusable="false">
 <path
 d="M2 12 Q8 4 14 10 Q18 6 20 10 Q22 6 26 10 Q32 4 38 12"
 stroke={color}
@@ -277,7 +295,7 @@ strokeLinecap="round"
 
 function PineRow({ count = 7, color = C.pineDeep, opacity = 0.6 }) {
 return (
-<svg width="100%" height="14" viewBox={`0 0 ${count * 16} 14`} preserveAspectRatio="none" style={{ opacity, display: "block" }}>
+<svg width="100%" height="14" viewBox={`0 0 ${count * 16} 14`} preserveAspectRatio="none" style={{ opacity, display: "block" }} aria-hidden="true" focusable="false">
 {Array.from({ length: count }).map((_, i) => (
 <polygon
 key={i}
@@ -301,7 +319,7 @@ textTransform: "uppercase", fontFamily: "-apple-system, BlinkMacSystemFont, 'Seg
 color: c, background: `${c}18`, border: `1px solid ${c}55`,
 borderRadius: "2px",
 }}>
-{isBooked ? "✦" : "△"} {isBooked ? "BOOKED" : "TODO"}
+<span aria-hidden="true">{isBooked ? "✦" : "△"}</span> {isBooked ? "BOOKED" : "TODO"}
 </span>
 );
 }
@@ -314,12 +332,12 @@ function ItineraryRow({ entry, section, C, derived, onOpenPhoto }) {
   const photos = entry.photos || [];
   const hasPhotos = photos.length > 0;
   return (
-    <div style={{
+    <li style={{
       display: "flex", gap: "10px", padding: "6px 0",
       fontSize: "13px", color: C.mist,
       alignItems: "flex-start", lineHeight: 1.45,
     }}>
-      <span style={{
+      <span aria-hidden="true" style={{
         color: derived ? C.iceBlue : section.accent,
         flexShrink: 0, marginTop: "2px", fontSize: "10px",
       }}>
@@ -331,7 +349,7 @@ function ItineraryRow({ entry, section, C, derived, onOpenPhoto }) {
           <button
             type="button"
             onClick={() => onOpenPhoto(photos, 0)}
-            title={`${photos.length} matching photo${photos.length === 1 ? "" : "s"}`}
+            aria-label={`View ${photos.length} matching photo${photos.length === 1 ? "" : "s"}`}
             style={{
               display: "inline-flex", alignItems: "center", gap: "4px",
               marginLeft: "8px", padding: "1px 7px",
@@ -345,11 +363,11 @@ function ItineraryRow({ entry, section, C, derived, onOpenPhoto }) {
               letterSpacing: "0.5px",
             }}
           >
-            📷 {photos.length}
+            <span aria-hidden="true">📷</span> {photos.length}
           </button>
         )}
       </span>
-    </div>
+    </li>
   );
 }
 
@@ -509,8 +527,9 @@ function ParkConditionsCard({ accent, fontDisplay }) {
     statusColor = C.gold;
   }
 
+  const sevLabel = { high: "Warning", info: "Info", good: "Status OK" };
   return (
-    <div style={{
+    <section aria-labelledby="park-conditions-heading" style={{
       background: `linear-gradient(180deg, ${C.deepFjord}f0 0%, ${C.midnight}f0 100%)`,
       border: `1px solid ${accent}55`,
       borderLeft: `3px solid ${accent}`,
@@ -523,15 +542,17 @@ function ParkConditionsCard({ accent, fontDisplay }) {
         display: "flex", alignItems: "baseline", justifyContent: "space-between",
         gap: "10px", marginBottom: "4px",
       }}>
-        <div style={{
+        <h2 id="park-conditions-heading" style={{
           fontFamily: fontDisplay, fontSize: "10px",
           letterSpacing: "3px", textTransform: "uppercase", color: accent,
+          margin: 0, fontWeight: "normal",
         }}>
-          ◈ Park Conditions
-        </div>
+          <span aria-hidden="true">◈ </span>Park Conditions
+        </h2>
         <button
           onClick={refresh}
           disabled={loading}
+          aria-label={loading ? "Refreshing park conditions" : "Refresh park conditions"}
           style={{
             background: "transparent",
             border: `1px solid ${C.stone}44`,
@@ -542,7 +563,7 @@ function ParkConditionsCard({ accent, fontDisplay }) {
             cursor: loading ? "wait" : "pointer",
           }}
         >
-          {loading ? "⟳ Syncing" : "↻ Refresh"}
+          <span aria-hidden="true">{loading ? "⟳" : "↻"}</span> {loading ? "Syncing" : "Refresh"}
         </button>
       </div>
 
@@ -554,7 +575,7 @@ function ParkConditionsCard({ accent, fontDisplay }) {
         {data.headline}
       </div>
 
-      <div style={{
+      <div aria-live="polite" style={{
         display: "flex", justifyContent: "space-between",
         fontFamily: fontDisplay, fontSize: "9px",
         letterSpacing: "1.5px", textTransform: "uppercase",
@@ -566,17 +587,17 @@ function ParkConditionsCard({ accent, fontDisplay }) {
         <span style={{ color: statusColor }}>{statusLabel}</span>
       </div>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+      <ul style={{ display: "flex", flexDirection: "column", gap: "8px", listStyle: "none", padding: 0, margin: 0 }}>
         {data.alerts.map((a, i) => {
           const color = sevColor[a.severity] || C.stone;
           return (
-            <div key={i} style={{
+            <li key={i} style={{
               display: "flex", gap: "10px",
               padding: "8px 10px",
               background: `${C.midnight}88`,
               borderLeft: `2px solid ${color}`,
             }}>
-              <span style={{ color, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>
+              <span aria-hidden="true" style={{ color, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>
                 {sevGlyph[a.severity] || "·"}
               </span>
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -584,16 +605,17 @@ function ParkConditionsCard({ accent, fontDisplay }) {
                   fontSize: "12px", color: C.snow,
                   fontWeight: 500, marginBottom: "2px",
                 }}>
+                  {sevLabel[a.severity] && <SrOnly>{sevLabel[a.severity]}: </SrOnly>}
                   {a.title}
                 </div>
                 <div style={{ fontSize: "11px", color: C.textMuted, lineHeight: 1.45 }}>
                   {a.body}
                 </div>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
       <div style={{
         marginTop: "12px",
@@ -603,10 +625,11 @@ function ParkConditionsCard({ accent, fontDisplay }) {
       }}>
         <a href={data.source} target="_blank" rel="noopener noreferrer"
            style={{ color: C.iceBlue, textDecoration: "none" }}>
-          nps.gov/dena ↗
+          nps.gov/dena <span aria-hidden="true">↗</span>
+          <SrOnly> (opens in new tab)</SrOnly>
         </a>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -632,42 +655,43 @@ const DENALI_VIEWPOINTS = [
 
 function DenaliViewpointsCard({ accent, fontDisplay }) {
   return (
-    <div style={{
+    <section aria-labelledby="summit-viewpoints-heading" style={{
       background: `linear-gradient(180deg, ${C.deepFjord}f0 0%, ${C.midnight}f0 100%)`,
       border: `1px solid ${accent}55`,
       borderLeft: `3px solid ${accent}`,
       padding: "16px 18px",
       marginBottom: "16px",
     }}>
-      <div style={{
+      <h2 id="summit-viewpoints-heading" style={{
         fontFamily: fontDisplay, fontSize: "10px",
         letterSpacing: "3px", textTransform: "uppercase", color: accent,
-        marginBottom: "4px",
+        marginBottom: "4px", margin: 0, fontWeight: "normal",
       }}>
-        ◈ Summit Viewpoints
-      </div>
+        <span aria-hidden="true">◈ </span>Summit Viewpoints
+      </h2>
       <div style={{
         fontFamily: fontDisplay, fontStyle: "italic",
         fontSize: "14px", color: C.snow,
-        lineHeight: 1.4, marginBottom: "12px",
+        lineHeight: 1.4, marginBottom: "12px", marginTop: "4px",
       }}>
         Best places to see The High One
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
         {DENALI_VIEWPOINTS.map((zone, zi) => (
-          <div key={zi}>
+          <section key={zi} aria-label={zone.zone}>
             <div style={{
               display: "flex", alignItems: "baseline", gap: "8px",
               paddingBottom: "6px", marginBottom: "8px",
               borderBottom: `1px dotted ${C.stone}33`,
             }}>
-              <span style={{
+              <h3 style={{
                 fontFamily: fontDisplay, fontSize: "11px",
                 letterSpacing: "2px", textTransform: "uppercase", color: C.snow,
+                margin: 0, fontWeight: "normal",
               }}>
                 {zone.zone}
-              </span>
+              </h3>
               <span style={{
                 fontFamily: fontDisplay, fontSize: "10px",
                 fontStyle: "italic", color: C.textDim,
@@ -675,15 +699,15 @@ function DenaliViewpointsCard({ accent, fontDisplay }) {
                 · {zone.note}
               </span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            <ul style={{ display: "flex", flexDirection: "column", gap: "8px", listStyle: "none", padding: 0, margin: 0 }}>
               {zone.spots.map((s, si) => (
-                <div key={si} style={{
+                <li key={si} style={{
                   display: "flex", gap: "10px",
                   padding: "8px 10px",
                   background: `${C.midnight}88`,
                   borderLeft: `2px solid ${accent}99`,
                 }}>
-                  <span style={{ color: accent, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>▲</span>
+                  <span aria-hidden="true" style={{ color: accent, fontSize: "12px", flexShrink: 0, marginTop: "1px" }}>▲</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <a
                       href={appleMapsUrl(s.query)}
@@ -698,18 +722,19 @@ function DenaliViewpointsCard({ accent, fontDisplay }) {
                       }}
                     >
                       {s.name}
+                      <SrOnly> (opens in Apple Maps)</SrOnly>
                     </a>
                     <div style={{ fontSize: "11px", color: C.textMuted, lineHeight: 1.45, marginTop: "2px" }}>
                       {s.detail}
                     </div>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
-          </div>
+            </ul>
+          </section>
         ))}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -846,11 +871,14 @@ ${JSON.stringify(tripData, null, 2)}`,
   // ── Key-entry state ─────────────────────────────────────
   if (!storedKey) {
     return (
-      <div>
+      <section aria-labelledby="aurora-heading">
         <div style={{ textAlign: "center", marginBottom: "20px", fontFamily: fontDisplay }}>
-          <div style={{ fontSize: "11px", color: accent, letterSpacing: "4px", textTransform: "uppercase" }}>
+          <h2 id="aurora-heading" style={{
+            fontSize: "11px", color: accent, letterSpacing: "4px",
+            textTransform: "uppercase", margin: 0, fontWeight: "normal",
+          }}>
             Aurora · Trip Concierge
-          </div>
+          </h2>
           <div style={{ fontSize: "11px", color: C.textDim, letterSpacing: "2px", marginTop: "4px", fontStyle: "italic" }}>
             Ask anything about the expedition
           </div>
@@ -865,9 +893,9 @@ ${JSON.stringify(tripData, null, 2)}`,
             fontFamily: fontDisplay, fontSize: "13px", color: C.snow,
             fontStyle: "italic", letterSpacing: "0.5px", marginBottom: "8px",
           }}>
-            ✦ One-time setup
+            <span aria-hidden="true">✦ </span>One-time setup
           </div>
-          <div style={{ fontSize: "12px", color: C.textMuted, lineHeight: 1.55, marginBottom: "14px" }}>
+          <label htmlFor="anthropic-api-key" style={{ display: "block", fontSize: "12px", color: C.textMuted, lineHeight: 1.55, marginBottom: "14px" }}>
             Paste an Anthropic API key to enable the chat. It's stored only in this browser's local storage and sent directly to Anthropic — no server in between. Get one at{" "}
             <a
               href="https://console.anthropic.com/settings/keys"
@@ -875,15 +903,17 @@ ${JSON.stringify(tripData, null, 2)}`,
               rel="noopener noreferrer"
               style={{ color: accent, textDecoration: "underline", textUnderlineOffset: "2px" }}
             >
-              console.anthropic.com
+              console.anthropic.com<SrOnly> (opens in new tab)</SrOnly>
             </a>
             .
-          </div>
+          </label>
           <input
+            id="anthropic-api-key"
             type="password"
             value={keyDraft}
             onChange={(e) => setKeyDraft(e.target.value)}
             placeholder="sk-ant-..."
+            aria-label="Anthropic API key"
             autoComplete="off"
             spellCheck={false}
             style={{
@@ -910,10 +940,10 @@ ${JSON.stringify(tripData, null, 2)}`,
               transition: "all 0.15s",
             }}
           >
-            ◈ Save Key
+            <span aria-hidden="true">◈ </span>Save Key
           </button>
         </div>
-      </div>
+      </section>
     );
   }
 
@@ -926,11 +956,14 @@ ${JSON.stringify(tripData, null, 2)}`,
   ];
 
   return (
-    <div>
+    <section aria-labelledby="aurora-chat-heading">
       <div style={{ textAlign: "center", marginBottom: "16px", fontFamily: fontDisplay }}>
-        <div style={{ fontSize: "11px", color: accent, letterSpacing: "4px", textTransform: "uppercase" }}>
+        <h2 id="aurora-chat-heading" style={{
+          fontSize: "11px", color: accent, letterSpacing: "4px",
+          textTransform: "uppercase", margin: 0, fontWeight: "normal",
+        }}>
           Aurora · Trip Concierge
-        </div>
+        </h2>
         <div style={{ fontSize: "11px", color: C.textDim, letterSpacing: "2px", marginTop: "4px", fontStyle: "italic" }}>
           Ask anything about the expedition
         </div>
@@ -939,6 +972,10 @@ ${JSON.stringify(tripData, null, 2)}`,
       {/* Conversation */}
       <div
         ref={scrollerRef}
+        role="log"
+        aria-live="polite"
+        aria-atomic="false"
+        aria-label="Aurora conversation"
         style={{
           background: `${C.midnight}aa`, backdropFilter: "blur(8px)",
           border: `1px solid ${C.stone}25`,
@@ -955,27 +992,29 @@ ${JSON.stringify(tripData, null, 2)}`,
               letterSpacing: "2.5px", textTransform: "uppercase",
               marginBottom: "10px",
             }}>
-              ◆ Try asking
+              <span aria-hidden="true">◆ </span>Try asking
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <ul style={{ display: "flex", flexDirection: "column", gap: "6px", listStyle: "none", padding: 0, margin: 0 }}>
               {examples.map((q, i) => (
-                <button
-                  key={i}
-                  onClick={() => setInput(q)}
-                  style={{
-                    textAlign: "left", padding: "9px 12px",
-                    background: `${C.deepFjord}66`,
-                    border: `1px solid ${C.stone}22`,
-                    borderLeft: `2px solid ${accent}55`,
-                    color: C.mist, fontFamily: fontBody, fontSize: "12px",
-                    cursor: "pointer", transition: "all 0.15s",
-                    fontStyle: "italic",
-                  }}
-                >
-                  {q}
-                </button>
+                <li key={i}>
+                  <button
+                    onClick={() => setInput(q)}
+                    style={{
+                      width: "100%",
+                      textAlign: "left", padding: "9px 12px",
+                      background: `${C.deepFjord}66`,
+                      border: `1px solid ${C.stone}22`,
+                      borderLeft: `2px solid ${accent}55`,
+                      color: C.mist, fontFamily: fontBody, fontSize: "12px",
+                      cursor: "pointer", transition: "all 0.15s",
+                      fontStyle: "italic",
+                    }}
+                  >
+                    {q}
+                  </button>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         )}
 
@@ -1005,7 +1044,7 @@ ${JSON.stringify(tripData, null, 2)}`,
                   textTransform: "uppercase", color: isUser ? C.iceBlue : accent,
                   marginBottom: "4px",
                 }}>
-                  {isUser ? "You" : "✦ Aurora"}
+                  {isUser ? "You" : <><span aria-hidden="true">✦ </span>Aurora</>}
                 </div>
                 {m.content}
               </div>
@@ -1014,7 +1053,7 @@ ${JSON.stringify(tripData, null, 2)}`,
         })}
 
         {loading && (
-          <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: "10px" }}>
+          <div role="status" style={{ display: "flex", justifyContent: "flex-start", marginBottom: "10px" }}>
             <div style={{
               background: `${C.deepFjord}cc`, border: `1px solid ${C.stone}33`,
               borderLeft: `2px solid ${accent}`,
@@ -1023,14 +1062,14 @@ ${JSON.stringify(tripData, null, 2)}`,
               fontSize: "12px", color: C.textMuted,
               letterSpacing: "0.5px",
             }}>
-              ✦ Aurora is thinking…
+              <span aria-hidden="true">✦ </span>Aurora is thinking…
             </div>
           </div>
         )}
       </div>
 
       {error && (
-        <div style={{
+        <div role="alert" style={{
           background: `${C.alpenglow}15`,
           border: `1px solid ${C.alpenglow}55`,
           borderLeft: `2px solid ${C.alpenglow}`,
@@ -1038,7 +1077,9 @@ ${JSON.stringify(tripData, null, 2)}`,
           fontSize: "12px", color: C.alpenglow,
           fontFamily: fontBody, lineHeight: 1.45,
         }}>
-          ⚠ {error}
+          <span aria-hidden="true">⚠ </span>
+          <SrOnly>Error: </SrOnly>
+          {error}
         </div>
       )}
 
@@ -1048,7 +1089,11 @@ ${JSON.stringify(tripData, null, 2)}`,
         background: `${C.midnight}aa`, padding: "8px",
         border: `1px solid ${C.stone}25`,
       }}>
+        <label htmlFor="aurora-input" style={SR_ONLY_STYLE}>
+          Message Aurora about the trip
+        </label>
         <textarea
+          id="aurora-input"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={onKeyDown}
@@ -1067,6 +1112,7 @@ ${JSON.stringify(tripData, null, 2)}`,
         <button
           onClick={send}
           disabled={!input.trim() || loading}
+          aria-label={loading ? "Sending message" : "Send message"}
           style={{
             background: input.trim() && !loading ? `${accent}33` : `${C.stone}22`,
             border: `1px solid ${input.trim() && !loading ? accent : C.stone + "33"}`,
@@ -1078,7 +1124,7 @@ ${JSON.stringify(tripData, null, 2)}`,
             transition: "all 0.15s",
           }}
         >
-          {loading ? "…" : "Send"}
+          {loading ? <span aria-hidden="true">…</span> : "Send"}
         </button>
       </div>
 
@@ -1118,7 +1164,7 @@ ${JSON.stringify(tripData, null, 2)}`,
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -1131,6 +1177,8 @@ const [expandedDay, setExpandedDay] = useState(null);
 const [showCosts, setShowCosts] = useState(false);
 const [lightbox, setLightbox] = useState(null); // { photos: [photoObj], index: number }
 const { byDate: photosByDate, loading: photosLoading, error: photosError } = usePhotos();
+const lightboxRef = useRef(null);
+const lightboxOpenerRef = useRef(null);
 
 // Hint the browser so native UI (scrollbars, form controls, default canvas)
 // matches the active palette.
@@ -1139,18 +1187,58 @@ useEffect(() => {
   document.documentElement.style.colorScheme = theme;
 }, [theme]);
 
-// Keyboard navigation while lightbox is open
+// Keyboard navigation + focus trap while lightbox is open
 useEffect(() => {
 if (!lightbox) return;
+const previouslyFocused = lightboxOpenerRef.current || document.activeElement;
+// Defer to next tick so the dialog node exists.
+const focusTimer = window.setTimeout(() => {
+  lightboxRef.current?.focus?.();
+}, 0);
 const onKey = (e) => {
-if (e.key === "Escape") setLightbox(null);
-else if (e.key === "ArrowRight" && lightbox.index < lightbox.photos.length - 1)
-setLightbox({ ...lightbox, index: lightbox.index + 1 });
-else if (e.key === "ArrowLeft" && lightbox.index > 0)
-setLightbox({ ...lightbox, index: lightbox.index - 1 });
+if (e.key === "Escape") {
+  e.preventDefault();
+  setLightbox(null);
+} else if (e.key === "ArrowRight" && lightbox.index < lightbox.photos.length - 1) {
+  setLightbox({ ...lightbox, index: lightbox.index + 1 });
+} else if (e.key === "ArrowLeft" && lightbox.index > 0) {
+  setLightbox({ ...lightbox, index: lightbox.index - 1 });
+} else if (e.key === "Tab") {
+  // Simple focus trap: keep focus inside the dialog.
+  const root = lightboxRef.current;
+  if (!root) return;
+  const focusables = root.querySelectorAll(
+    'button, [href], [tabindex]:not([tabindex="-1"])'
+  );
+  if (focusables.length === 0) {
+    e.preventDefault();
+    root.focus();
+    return;
+  }
+  const first = focusables[0];
+  const last = focusables[focusables.length - 1];
+  if (e.shiftKey && document.activeElement === first) {
+    e.preventDefault();
+    last.focus();
+  } else if (!e.shiftKey && document.activeElement === last) {
+    e.preventDefault();
+    first.focus();
+  } else if (document.activeElement === root) {
+    e.preventDefault();
+    (e.shiftKey ? last : first).focus();
+  }
+}
 };
 window.addEventListener("keydown", onKey);
-return () => window.removeEventListener("keydown", onKey);
+return () => {
+  window.clearTimeout(focusTimer);
+  window.removeEventListener("keydown", onKey);
+  // Restore focus to the element that opened the lightbox.
+  if (previouslyFocused && typeof previouslyFocused.focus === "function") {
+    previouslyFocused.focus();
+  }
+  lightboxOpenerRef.current = null;
+};
 }, [lightbox]);
 
 const section = TRIP_DATA.sections.find((s) => s.id === activeSection);
@@ -1174,8 +1262,49 @@ position: "relative",
 overflow: "hidden",
 }}
 >
+<style>{`
+  /* Visible focus indicator for keyboard users. Inline styles can't set
+     :focus-visible, so we rely on this global rule. */
+  *:focus { outline: none; }
+  *:focus-visible {
+    outline: 2px solid ${C.iceBlue};
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  a:focus-visible {
+    outline: 2px solid ${C.iceBlue};
+    outline-offset: 2px;
+  }
+  /* Skip link — visible only when focused. */
+  .a11y-skip-link {
+    position: absolute;
+    left: 8px;
+    top: -100px;
+    z-index: 9999;
+    padding: 10px 14px;
+    background: ${C.midnight};
+    color: ${C.snow};
+    border: 2px solid ${C.iceBlue};
+    font-family: 'Hoefler Text', Georgia, serif;
+    font-size: 13px;
+    letterSpacing: 2px;
+    text-decoration: none;
+  }
+  .a11y-skip-link:focus { top: 8px; }
+  /* Respect users who prefer reduced motion: kill long transitions and
+     keyframe animations everywhere. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+`}</style>
+<a href="#main-content" className="a11y-skip-link">Skip to main content</a>
 {/* Atmospheric mist */}
-<div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+<div aria-hidden="true" style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
 <div style={{
 position: "absolute", top: "30%", left: "-20%", width: "70%", height: "40%",
 background: `radial-gradient(ellipse, ${C.glacier}1a 0%, transparent 70%)`,
@@ -1191,7 +1320,7 @@ filter: "blur(50px)",
   <div style={{ position: "relative", zIndex: 1, maxWidth: "680px", margin: "0 auto" }}>
 
     {/* ─── Header with mountain range ─── */}
-    <div style={{ position: "relative", paddingTop: "180px" }}>
+    <header style={{ position: "relative", paddingTop: "180px" }}>
       <MountainHeader />
       <div style={{ position: "absolute", top: "172px", left: 0, right: 0 }}>
         <PineRow count={48} color={C.pineDeep} opacity={0.75} />
@@ -1237,22 +1366,25 @@ filter: "blur(50px)",
           <div style={{ height: "1px", flex: 1, background: `linear-gradient(90deg, ${C.stone}55, transparent)` }} />
         </div>
 
-        <div style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap" }}>
+        <ul aria-label="Flights" style={{ display: "flex", gap: "6px", justifyContent: "center", flexWrap: "wrap", listStyle: "none", padding: 0, margin: 0 }}>
           {[TRIP_DATA.flights.outbound, TRIP_DATA.flights.return].map((f, i) => (
-            <div key={i} title={f.details} style={{
+            <li key={i} title={f.details} style={{
               display: "inline-flex", alignItems: "center", gap: "5px",
               background: `${C.iceBlue}10`, border: `1px solid ${C.iceBlue}30`,
               padding: "5px 11px", fontSize: "11px", color: C.iceBlue,
               fontFamily: fontDisplay, letterSpacing: "0.5px",
             }}>
-              ✈ <strong style={{ fontWeight: "normal", color: C.snow }}>{f.airline}</strong> · {f.conf} · {f.route}
-            </div>
+              <span aria-hidden="true">✈</span> <strong style={{ fontWeight: "normal", color: C.snow }}>{f.airline}</strong> · {f.conf} · {f.route}
+            </li>
           ))}
-        </div>
+        </ul>
 
         {!PUBLIC_MODE && (
-        <div
+        <button
+          type="button"
           onClick={() => setShowCosts(!showCosts)}
+          aria-expanded={showCosts}
+          aria-controls="costs-panel"
           style={{
             display: "inline-flex", alignItems: "center", gap: "6px",
             background: `${C.pineSoft}15`, border: `1px solid ${C.pineSoft}45`,
@@ -1260,25 +1392,28 @@ filter: "blur(50px)",
             fontSize: "11px", color: C.pineSoft, cursor: "pointer", letterSpacing: "0.5px",
           }}
         >
-          ◈ ${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })} spent · ISP excursion TBD {showCosts ? "▲" : "▼"}
-        </div>
+          <span aria-hidden="true">◈ </span>${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })} spent · ISP excursion TBD <span aria-hidden="true">{showCosts ? "▲" : "▼"}</span>
+        </button>
         )}
 
         {!PUBLIC_MODE && showCosts && (
-          <div style={{
+          <div id="costs-panel" style={{
             background: `${C.midnight}cc`, border: `1px solid ${C.pineSoft}30`,
             padding: "16px 18px", marginTop: "10px", textAlign: "left",
             backdropFilter: "blur(10px)",
           }}>
+            <h2 style={SR_ONLY_STYLE}>Trip costs</h2>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {TRIP_DATA.costs.map((c, i) => (
-              <div key={i} style={{
+              <li key={i} style={{
                 display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "12px",
                 borderBottom: i < TRIP_DATA.costs.length - 1 ? `1px solid ${C.stone}22` : "none",
               }}>
                 <span style={{ color: C.textMuted }}>{c.label}</span>
                 <span style={{ color: C.snow, fontFamily: fontDisplay, letterSpacing: "0.5px" }}>${c.amount.toFixed(2)}</span>
-              </div>
+              </li>
             ))}
+            </ul>
             <div style={{
               display: "flex", justifyContent: "space-between", padding: "10px 0 0", fontSize: "13px",
               borderTop: `1px solid ${C.pineSoft}55`, marginTop: "8px", fontFamily: fontDisplay,
@@ -1293,17 +1428,18 @@ filter: "blur(50px)",
           </div>
         )}
       </div>
-    </div>
+    </header>
 
-    <div style={{ padding: "28px 16px 48px" }}>
+    <main id="main-content" style={{ padding: "28px 16px 0" }}>
       {/* Section toggle */}
-      <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
+      <div role="group" aria-label="Trip leg" style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
         {TRIP_DATA.sections.map((s) => {
           const active = activeSection === s.id;
           return (
             <button
               key={s.id}
               onClick={() => { setActiveSection(s.id); setExpandedDay(null); }}
+              aria-pressed={active}
               style={{
                 flex: 1, padding: "16px 8px", cursor: "pointer",
                 background: active ? `linear-gradient(180deg, ${s.color}ee 0%, ${s.color}aa 100%)` : `${C.deepFjord}aa`,
@@ -1316,7 +1452,7 @@ filter: "blur(50px)",
                 position: "relative", overflow: "hidden",
               }}
             >
-              <div style={{ fontSize: "20px", marginBottom: "4px" }}>{s.emoji}</div>
+              <div aria-hidden="true" style={{ fontSize: "20px", marginBottom: "4px" }}>{s.emoji}</div>
               <div style={{ fontStyle: "italic", fontSize: "14px" }}>{s.title}</div>
               <div style={{ fontSize: "9px", opacity: 0.7, marginTop: "3px", letterSpacing: "2px" }}>{s.dates.replace("2026", "'26")}</div>
               {active && (
@@ -1330,28 +1466,60 @@ filter: "blur(50px)",
       </div>
 
       {/* Tab bar */}
-      <div style={{
-        display: "flex", background: `${C.midnight}99`,
-        border: `1px solid ${C.stone}25`,
-        padding: "4px", marginBottom: "24px",
-      }}>
+      <div
+        role="tablist"
+        aria-label="Trip information"
+        onKeyDown={(e) => {
+          const tabs = ["itinerary", "packing", "todos", "chat"];
+          const i = tabs.indexOf(activeTab);
+          let next = null;
+          if (e.key === "ArrowRight") next = tabs[(i + 1) % tabs.length];
+          else if (e.key === "ArrowLeft") next = tabs[(i - 1 + tabs.length) % tabs.length];
+          else if (e.key === "Home") next = tabs[0];
+          else if (e.key === "End") next = tabs[tabs.length - 1];
+          if (next) {
+            e.preventDefault();
+            setActiveTab(next);
+            const el = e.currentTarget.querySelector(`#tab-${next}`);
+            el?.focus?.();
+          }
+        }}
+        style={{
+          display: "flex", background: `${C.midnight}99`,
+          border: `1px solid ${C.stone}25`,
+          padding: "4px", marginBottom: "24px",
+        }}
+      >
         {["itinerary", "packing", "todos", "chat"].map((tab) => {
           const active = activeTab === tab;
-          const label = tab === "itinerary" ? "✦ Itinerary"
-            : tab === "packing" ? "▲ Packing"
-            : tab === "chat" ? "✦ Ask"
-            : `◈ Todo ${completedCount}/${todos.length}`;
+          const visualLabel = tab === "itinerary" ? <><span aria-hidden="true">✦ </span>Itinerary</>
+            : tab === "packing" ? <><span aria-hidden="true">▲ </span>Packing</>
+            : tab === "chat" ? <><span aria-hidden="true">✦ </span>Ask</>
+            : <><span aria-hidden="true">◈ </span>Todo {completedCount}/{todos.length}</>;
+          const a11yName = tab === "todos"
+            ? `Todo, ${completedCount} of ${todos.length} complete`
+            : tab.charAt(0).toUpperCase() + tab.slice(1);
           return (
-            <button key={tab} onClick={() => setActiveTab(tab)} style={{
-              flex: 1, padding: "10px 4px", border: "none", cursor: "pointer",
-              background: active ? `${C.glacier}33` : "transparent",
-              color: active ? C.snow : C.textDim,
-              fontFamily: fontDisplay, fontSize: "11px",
-              letterSpacing: "1.5px", textTransform: "uppercase",
-              transition: "all 0.15s",
-              borderBottom: active ? `1px solid ${C.iceBlue}` : "1px solid transparent",
-            }}>
-              {label}
+            <button
+              key={tab}
+              role="tab"
+              id={`tab-${tab}`}
+              aria-selected={active}
+              aria-controls={`panel-${tab}`}
+              tabIndex={active ? 0 : -1}
+              aria-label={a11yName}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                flex: 1, padding: "10px 4px", border: "none", cursor: "pointer",
+                background: active ? `${C.glacier}33` : "transparent",
+                color: active ? C.snow : C.textDim,
+                fontFamily: fontDisplay, fontSize: "11px",
+                letterSpacing: "1.5px", textTransform: "uppercase",
+                transition: "all 0.15s",
+                borderBottom: active ? `1px solid ${C.iceBlue}` : "1px solid transparent",
+              }}
+            >
+              {visualLabel}
             </button>
           );
         })}
@@ -1359,11 +1527,14 @@ filter: "blur(50px)",
 
       {/* ═══ ITINERARY ═══ */}
       {activeTab === "itinerary" && (
-        <div>
+        <div role="tabpanel" id="panel-itinerary" aria-labelledby="tab-itinerary" tabIndex={0}>
           <div style={{ textAlign: "center", marginBottom: "20px", fontFamily: fontDisplay }}>
-            <div style={{ fontSize: "11px", color: section.accent, letterSpacing: "4px", textTransform: "uppercase" }}>
+            <h2 style={{
+              fontSize: "11px", color: section.accent, letterSpacing: "4px",
+              textTransform: "uppercase", margin: 0, fontWeight: "normal",
+            }}>
               {section.subtitle}
-            </div>
+            </h2>
             <div style={{ fontSize: "11px", color: C.textDim, letterSpacing: "2px", marginTop: "4px", fontStyle: "italic" }}>
               {section.dates}
             </div>
@@ -1388,26 +1559,32 @@ filter: "blur(50px)",
             );
             const tone = photosError ? C.alpenglow : C.iceBlue;
             const label = photosError
-              ? `⚠ photos: ${photosError}`
+              ? `Photos error: ${photosError}`
               : photosLoading
-              ? `… loading photos from iCloud${totalPhotos ? ` (cached: ${totalPhotos})` : ""}`
+              ? `Loading photos from iCloud${totalPhotos ? ` (cached: ${totalPhotos})` : ""}…`
               : totalPhotos === 0
-              ? `📷 album returned 0 photos`
-              : `📷 ${totalPhotos} photo${totalPhotos === 1 ? "" : "s"} loaded from album`;
+              ? `Album returned 0 photos`
+              : `${totalPhotos} photo${totalPhotos === 1 ? "" : "s"} loaded from album`;
+            const glyph = photosError ? "⚠" : photosLoading ? "…" : "📷";
             return (
-              <div style={{
-                fontSize: "10px", letterSpacing: "1.5px",
-                color: tone, fontFamily: fontDisplay,
-                background: `${C.midnight}66`,
-                border: `1px solid ${tone}33`,
-                padding: "6px 12px", marginBottom: "16px",
-                textAlign: "center", textTransform: "uppercase",
-              }}>
-                {label}
+              <div
+                role="status"
+                aria-live="polite"
+                style={{
+                  fontSize: "10px", letterSpacing: "1.5px",
+                  color: tone, fontFamily: fontDisplay,
+                  background: `${C.midnight}66`,
+                  border: `1px solid ${tone}33`,
+                  padding: "6px 12px", marginBottom: "16px",
+                  textAlign: "center", textTransform: "uppercase",
+                }}
+              >
+                <span aria-hidden="true">{glyph} </span>{label}
               </div>
             );
           })()}
 
+          <ul aria-label={`${section.subtitle} day-by-day`} style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {section.days.map((day, i) => {
             const expanded = expandedDay === i;
             const accentColor = day.status === "booked" ? C.pineSoft : day.status === "todo" ? C.alpenglow : C.stone;
@@ -1419,10 +1596,13 @@ filter: "blur(50px)",
             const { enriched: enrichedItems, derived: derivedItems } = past
               ? enhanceItems(day.items, dayPhotos)
               : { enriched: day.items.map((text) => ({ text, photos: [] })), derived: [] };
+            const panelId = `day-panel-${i}`;
             return (
-              <div key={i} style={{ marginBottom: "10px", position: "relative" }}>
+              <li key={i} style={{ marginBottom: "10px", position: "relative" }}>
                 <button
                   onClick={() => setExpandedDay(expanded ? null : i)}
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
                   style={{
                     width: "100%",
                     background: expanded
@@ -1437,7 +1617,7 @@ filter: "blur(50px)",
                     transition: "all 0.2s",
                   }}
                 >
-                  <span style={{ fontSize: "22px", flexShrink: 0 }}>{day.icon}</span>
+                  <span aria-hidden="true" style={{ fontSize: "22px", flexShrink: 0 }}>{day.icon}</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "8px" }}>
                       <span style={{ fontFamily: fontDisplay, fontSize: "15px", color: C.snow, fontStyle: "italic" }}>
@@ -1464,20 +1644,23 @@ filter: "blur(50px)",
                           }}
                         >
                           {day.location}
+                          <SrOnly> (opens in Apple Maps)</SrOnly>
                         </a>
                       )}
                       {day.weather && (
                         <span style={{ marginLeft: "8px", color: C.alpenglowSoft, fontFamily: fontDisplay }}>
-                          {day.weather.icon} {day.weather.hi}°/{day.weather.lo}°
+                          <span aria-hidden="true">{day.weather.icon} </span>
+                          <SrOnly>High </SrOnly>{day.weather.hi}°<span aria-hidden="true">/</span>
+                          <SrOnly>, low </SrOnly>{day.weather.lo}°
                         </span>
                       )}
                     </div>
                   </div>
-                  <span style={{ color: section.accent, fontSize: "10px", flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
+                  <span aria-hidden="true" style={{ color: section.accent, fontSize: "10px", flexShrink: 0 }}>{expanded ? "▲" : "▼"}</span>
                 </button>
 
                 {expanded && (
-                  <div style={{
+                  <div id={panelId} style={{
                     background: `${C.midnight}d9`, backdropFilter: "blur(12px)",
                     border: `1px solid ${section.accent}`, borderTop: "none",
                     borderLeft: `3px solid ${accentColor}`,
@@ -1564,32 +1747,33 @@ filter: "blur(50px)",
                       </div>
                     )}
                     {past && dayPhotos.length > 0 && (
-                      <div style={{ marginBottom: "12px" }}>
-                        <div style={{
+                      <section aria-label={`Photographs for ${day.date}, ${dayPhotos.length} total`} style={{ marginBottom: "12px" }}>
+                        <h3 style={{
                           fontSize: "9px", letterSpacing: "2.5px", color: section.accent,
                           textTransform: "uppercase", marginBottom: "8px",
                           fontFamily: fontDisplay, display: "flex", alignItems: "center", gap: "8px",
+                          margin: "0 0 8px", fontWeight: "normal",
                         }}>
-                          <span>✦ Photographs · {dayPhotos.length}</span>
-                          <div style={{ flex: 1, height: "1px", background: `${section.accent}33` }} />
-                        </div>
-                        <div style={{
+                          <span><span aria-hidden="true">✦ </span>Photographs · {dayPhotos.length}</span>
+                          <span aria-hidden="true" style={{ flex: 1, height: "1px", background: `${section.accent}33` }} />
+                        </h3>
+                        <ul style={{
                           display: "flex", gap: "10px", overflowX: "auto",
                           paddingBottom: "6px", scrollbarWidth: "thin",
                           WebkitOverflowScrolling: "touch",
+                          listStyle: "none", padding: 0, margin: 0,
                         }}>
-                          {dayPhotos.map((photo, pIdx) => (
-                            <div key={photo.guid} style={{ flexShrink: 0, width: "150px" }}>
-                              <div
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => setLightbox({ photos: dayPhotos, index: pIdx })}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter" || e.key === " ") {
-                                    e.preventDefault();
-                                    setLightbox({ photos: dayPhotos, index: pIdx });
-                                  }
+                          {dayPhotos.map((photo, pIdx) => {
+                            const photoLabel = photo.caption || photo.locationName || `Photo ${pIdx + 1}`;
+                            return (
+                            <li key={photo.guid} style={{ flexShrink: 0, width: "150px" }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  lightboxOpenerRef.current = e.currentTarget;
+                                  setLightbox({ photos: dayPhotos, index: pIdx });
                                 }}
+                                aria-label={`Open photo: ${photoLabel} (${pIdx + 1} of ${dayPhotos.length})`}
                                 style={{
                                   width: "150px", height: "200px", overflow: "hidden",
                                   border: `1px solid ${C.iceBlue}33`,
@@ -1599,6 +1783,7 @@ filter: "blur(50px)",
                                   cursor: "pointer",
                                   transition: "transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
                                   position: "relative",
+                                  padding: 0, display: "block",
                                 }}
                                 onMouseEnter={(e) => {
                                   e.currentTarget.style.transform = "translateY(-2px)";
@@ -1611,11 +1796,11 @@ filter: "blur(50px)",
                                   e.currentTarget.style.borderColor = `${C.iceBlue}33`;
                                 }}
                               >
-                                <img src={photo.thumb || photo.src} alt={photo.caption || photo.locationName || ""} style={{
+                                <img src={photo.thumb || photo.src} alt="" style={{
                                   width: "100%", height: "100%", objectFit: "cover", display: "block",
                                   pointerEvents: "none",
                                 }} loading="lazy" />
-                                <div style={{
+                                <span aria-hidden="true" style={{
                                   position: "absolute", bottom: "6px", right: "6px",
                                   width: "22px", height: "22px",
                                   borderRadius: "50%",
@@ -1624,22 +1809,23 @@ filter: "blur(50px)",
                                   display: "flex", alignItems: "center", justifyContent: "center",
                                   fontSize: "11px", color: C.iceBlue,
                                   border: `1px solid ${C.iceBlue}44`,
-                                }}>⤢</div>
-                              </div>
-                              <div style={{
+                                }}>⤢</span>
+                              </button>
+                              <div aria-hidden="true" style={{
                                 fontSize: "10px", color: C.textMuted,
                                 marginTop: "5px", lineHeight: 1.3,
                                 fontFamily: fontDisplay, fontStyle: "italic",
                               }}>
                                 {photo.caption || photo.locationName || ""}
                               </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                            </li>
+                            );
+                          })}
+                        </ul>
+                      </section>
                     )}
                     {past && dayPhotos.length === 0 && (
-                      <div style={{
+                      <div role="status" aria-live="polite" style={{
                         fontSize: "10px", color: C.textDim,
                         fontStyle: "italic", marginBottom: "10px",
                         fontFamily: fontDisplay, letterSpacing: "1px",
@@ -1651,6 +1837,7 @@ filter: "blur(50px)",
                           : "no photos in album for this date"}
                       </div>
                     )}
+                    <ul aria-label={`${day.day} activities`} style={{ listStyle: "none", padding: 0, margin: 0 }}>
                     {enrichedItems.map((entry, j) => (
                       <ItineraryRow
                         key={`e-${j}`}
@@ -1670,52 +1857,60 @@ filter: "blur(50px)",
                         onOpenPhoto={(photos, idx) => setLightbox({ photos, index: idx })}
                       />
                     ))}
+                    </ul>
                   </div>
                 )}
-              </div>
+              </li>
             );
           })}
+          </ul>
         </div>
       )}
 
       {/* ═══ PACKING ═══ */}
       {activeTab === "packing" && (
-        <div>
+        <div role="tabpanel" id="panel-packing" aria-labelledby="tab-packing" tabIndex={0}>
           {["cruise", "denali"].map((cat) => {
             const sec = TRIP_DATA.sections.find((s) => s.id === cat);
             const items = TRIP_DATA.packing[cat];
+            const headingId = `packing-${cat}-heading`;
             return (
-              <div key={cat} style={{ marginBottom: "22px" }}>
+              <section key={cat} aria-labelledby={headingId} style={{ marginBottom: "22px" }}>
                 <div style={{
                   background: sec.color,
                   borderTop: `2px solid ${sec.accent}`,
                   padding: "12px 16px", display: "flex", alignItems: "center", gap: "10px",
                 }}>
-                  <span style={{ fontSize: "20px" }}>{sec.emoji}</span>
+                  <span aria-hidden="true" style={{ fontSize: "20px" }}>{sec.emoji}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: fontDisplay, fontSize: "15px", color: "#f1f6f9", fontStyle: "italic", letterSpacing: "0.5px" }}>
+                    <h2 id={headingId} style={{
+                      fontFamily: fontDisplay, fontSize: "15px", color: "#f1f6f9",
+                      fontStyle: "italic", letterSpacing: "0.5px",
+                      margin: 0, fontWeight: "normal",
+                    }}>
                       {sec.title}
-                    </div>
+                    </h2>
                     <div style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "2.5px", color: sec.accent, textTransform: "uppercase", marginTop: "3px" }}>
                       Field Pack List
                     </div>
                   </div>
                 </div>
-                <div style={{
+                <ul style={{
                   background: `${C.deepFjord}99`, backdropFilter: "blur(8px)",
                   border: `1px solid ${C.stone}25`, borderTop: "none",
+                  listStyle: "none", padding: 0, margin: 0,
                 }}>
                   {items.map((item, i) => (
-                    <div key={i} style={{
+                    <li key={i} style={{
                       padding: "11px 16px", fontSize: "13px", color: C.mist,
                       borderBottom: i < items.length - 1 ? `1px solid ${C.stone}15` : "none",
                       display: "flex", gap: "10px", alignItems: "center",
                     }}>
-                      <span style={{ color: sec.accent, flexShrink: 0, fontSize: "11px" }}>◆</span> {item}
-                    </div>
+                      <span aria-hidden="true" style={{ color: sec.accent, flexShrink: 0, fontSize: "11px" }}>◆</span> {item}
+                    </li>
                   ))}
-                </div>
-              </div>
+                </ul>
+              </section>
             );
           })}
         </div>
@@ -1723,26 +1918,38 @@ filter: "blur(50px)",
 
       {/* ═══ TODO ═══ */}
       {activeTab === "todos" && (
-        <div>
+        <div role="tabpanel" id="panel-todos" aria-labelledby="tab-todos" tabIndex={0}>
           <div style={{
             display: "flex", alignItems: "center", justifyContent: "space-between",
             marginBottom: "18px", padding: "12px 14px",
             background: `${C.deepFjord}99`, border: `1px solid ${C.stone}25`,
           }}>
             <div>
-              <div style={{ fontFamily: fontDisplay, fontSize: "11px", color: C.iceBlue, letterSpacing: "2px", textTransform: "uppercase" }}>
+              <h2 style={{
+                fontFamily: fontDisplay, fontSize: "11px", color: C.iceBlue,
+                letterSpacing: "2px", textTransform: "uppercase",
+                margin: 0, fontWeight: "normal",
+              }}>
                 Expedition Progress
-              </div>
+              </h2>
               <div style={{ fontSize: "13px", color: C.textMuted, marginTop: "2px" }}>
                 {completedCount} of {todos.length} complete
               </div>
             </div>
-            <div style={{
-              height: "6px", width: "120px",
-              background: `${C.midnight}cc`, border: `1px solid ${C.stone}25`,
-              overflow: "hidden",
-            }}>
-              <div style={{
+            <div
+              role="progressbar"
+              aria-label="Todo completion"
+              aria-valuemin={0}
+              aria-valuemax={todos.length}
+              aria-valuenow={completedCount}
+              aria-valuetext={`${completedCount} of ${todos.length} complete`}
+              style={{
+                height: "6px", width: "120px",
+                background: `${C.midnight}cc`, border: `1px solid ${C.stone}25`,
+                overflow: "hidden",
+              }}
+            >
+              <div aria-hidden="true" style={{
                 height: "100%", width: `${(completedCount / todos.length) * 100}%`,
                 background: `linear-gradient(90deg, ${C.glacier}, ${C.pineSoft}, ${C.gold})`,
                 transition: "width 0.4s",
@@ -1753,53 +1960,64 @@ filter: "blur(50px)",
           {["high", "medium", "low"].map((p) => {
             const items = todos.filter((t) => t.priority === p);
             if (!items.length) return null;
+            const priorityHeadingId = `todo-priority-${p}`;
             return (
-              <div key={p} style={{ marginBottom: "20px" }}>
-                <div style={{
+              <section key={p} aria-labelledby={priorityHeadingId} style={{ marginBottom: "20px" }}>
+                <h3 id={priorityHeadingId} style={{
                   fontFamily: fontDisplay, fontSize: "10px",
                   letterSpacing: "3px", color: priorityColors[p],
                   textTransform: "uppercase", marginBottom: "10px", paddingLeft: "2px",
                   display: "flex", alignItems: "center", gap: "8px",
+                  margin: "0 0 10px", fontWeight: "normal",
                 }}>
-                  <span style={{ fontSize: "8px" }}>▲</span> {p} Priority
-                  <div style={{ flex: 1, height: "1px", background: `${priorityColors[p]}33` }} />
-                </div>
+                  <span aria-hidden="true" style={{ fontSize: "8px" }}>▲</span> {p} Priority
+                  <span aria-hidden="true" style={{ flex: 1, height: "1px", background: `${priorityColors[p]}33` }} />
+                </h3>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
                 {items.map((todo) => (
-                  <div
-                    key={todo.id}
-                    onClick={() => toggleTodo(todo.id)}
-                    style={{
-                      display: "flex", alignItems: "flex-start", gap: "12px",
-                      padding: "11px 14px",
-                      background: todo.done ? `${C.pineDeep}55` : `${C.deepFjord}88`,
-                      backdropFilter: "blur(6px)",
-                      marginBottom: "5px", cursor: "pointer",
-                      border: `1px solid ${todo.done ? C.pineSoft + "33" : C.stone + "20"}`,
-                      borderLeft: `2px solid ${todo.done ? C.pineSoft : priorityColors[todo.priority]}`,
-                      transition: "all 0.15s",
-                    }}
-                  >
-                    <div style={{
-                      width: "16px", height: "16px",
-                      flexShrink: 0, marginTop: "2px",
-                      border: `1.5px solid ${todo.done ? C.pineSoft : C.stone}`,
-                      background: todo.done ? C.pineSoft : "transparent",
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "11px", color: C.midnight, fontWeight: "bold",
-                    }}>
-                      {todo.done && "✓"}
-                    </div>
-                    <span style={{
-                      fontSize: "13px",
-                      color: todo.done ? C.textDim : C.mist,
-                      textDecoration: todo.done ? "line-through" : "none",
-                      lineHeight: 1.45,
-                    }}>
-                      {todo.text}
-                    </span>
-                  </div>
+                  <li key={todo.id} style={{ marginBottom: "5px" }}>
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={todo.done}
+                      onClick={() => toggleTodo(todo.id)}
+                      style={{
+                        width: "100%",
+                        display: "flex", alignItems: "flex-start", gap: "12px",
+                        padding: "11px 14px",
+                        background: todo.done ? `${C.pineDeep}55` : `${C.deepFjord}88`,
+                        backdropFilter: "blur(6px)",
+                        cursor: "pointer",
+                        border: `1px solid ${todo.done ? C.pineSoft + "33" : C.stone + "20"}`,
+                        borderLeft: `2px solid ${todo.done ? C.pineSoft : priorityColors[todo.priority]}`,
+                        transition: "all 0.15s",
+                        textAlign: "left", fontFamily: "inherit",
+                        color: "inherit",
+                      }}
+                    >
+                      <span aria-hidden="true" style={{
+                        width: "16px", height: "16px",
+                        flexShrink: 0, marginTop: "2px",
+                        border: `1.5px solid ${todo.done ? C.pineSoft : C.stone}`,
+                        background: todo.done ? C.pineSoft : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "11px", color: C.midnight, fontWeight: "bold",
+                      }}>
+                        {todo.done && "✓"}
+                      </span>
+                      <span style={{
+                        fontSize: "13px",
+                        color: todo.done ? C.textDim : C.mist,
+                        textDecoration: todo.done ? "line-through" : "none",
+                        lineHeight: 1.45,
+                      }}>
+                        {todo.text}
+                      </span>
+                    </button>
+                  </li>
                 ))}
-              </div>
+                </ul>
+              </section>
             );
           })}
         </div>
@@ -1807,39 +2025,41 @@ filter: "blur(50px)",
 
       {/* ═══ CHAT ═══ */}
       {activeTab === "chat" && (
-        <TripChat
-          tripData={TRIP_DATA}
-          fontDisplay={fontDisplay}
-          fontBody={fontBody}
-          sectionAccent={section.accent}
-        />
+        <div role="tabpanel" id="panel-chat" aria-labelledby="tab-chat" tabIndex={0}>
+          <TripChat
+            tripData={TRIP_DATA}
+            fontDisplay={fontDisplay}
+            fontBody={fontBody}
+            sectionAccent={section.accent}
+          />
+        </div>
       )}
+    </main>
 
-      {/* ─── Footer ─── */}
-      <div style={{ marginTop: "40px" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "14px", marginBottom: "16px" }}>
-          <div style={{ height: "1px", flex: 1, background: `linear-gradient(90deg, transparent, ${C.stone}44)` }} />
-          <EagleMotif size={26} color={C.glacier} opacity={0.5} />
-          <div style={{ height: "1px", flex: 1, background: `linear-gradient(90deg, ${C.stone}44, transparent)` }} />
-        </div>
-        <PineRow count={36} color={C.pineDeep} opacity={0.55} />
-        <div style={{
-          textAlign: "center", marginTop: "16px",
-          fontFamily: fontDisplay, fontSize: "10px",
-          color: C.textDim, letterSpacing: "5px",
-          textTransform: "uppercase",
-        }}>
-          Betsy's 40th ✦ Alaska MMXXVI
-        </div>
-        <div style={{
-          textAlign: "center", marginTop: "6px",
-          fontFamily: fontDisplay, fontSize: "12px",
-          color: C.alpenglowSoft, fontStyle: "italic",
-        }}>
-          ❦  Happy Birthday  ❦
-        </div>
+    {/* ─── Footer ─── */}
+    <footer style={{ padding: "0 16px 48px", marginTop: "40px" }}>
+      <div aria-hidden="true" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "14px", marginBottom: "16px" }}>
+        <div style={{ height: "1px", flex: 1, background: `linear-gradient(90deg, transparent, ${C.stone}44)` }} />
+        <EagleMotif size={26} color={C.glacier} opacity={0.5} />
+        <div style={{ height: "1px", flex: 1, background: `linear-gradient(90deg, ${C.stone}44, transparent)` }} />
       </div>
-    </div>
+      <PineRow count={36} color={C.pineDeep} opacity={0.55} />
+      <div style={{
+        textAlign: "center", marginTop: "16px",
+        fontFamily: fontDisplay, fontSize: "10px",
+        color: C.textDim, letterSpacing: "5px",
+        textTransform: "uppercase",
+      }}>
+        Betsy's 40th <span aria-hidden="true">✦</span> Alaska MMXXVI
+      </div>
+      <div style={{
+        textAlign: "center", marginTop: "6px",
+        fontFamily: fontDisplay, fontSize: "12px",
+        color: C.alpenglowSoft, fontStyle: "italic",
+      }}>
+        <span aria-hidden="true">❦  </span>Happy Birthday<span aria-hidden="true">  ❦</span>
+      </div>
+    </footer>
   </div>
 
   {/* ═══ LIGHTBOX OVERLAY ═══ */}
@@ -1850,6 +2070,11 @@ filter: "blur(50px)",
     const captionText = photo?.caption || photo?.locationName || "";
     return (
       <div
+        ref={lightboxRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Photo ${lightbox.index + 1} of ${lightbox.photos.length}${captionText ? `: ${captionText}` : ""}`}
+        tabIndex={-1}
         onClick={() => setLightbox(null)}
         style={{
           position: "fixed",
@@ -1863,6 +2088,7 @@ filter: "blur(50px)",
           padding: "20px",
           cursor: "zoom-out",
           animation: "fadeIn 0.18s ease-out",
+          outline: "none",
         }}
       >
         <style>{`
@@ -1870,9 +2096,30 @@ filter: "blur(50px)",
           @keyframes zoomIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
         `}</style>
 
-        {/* Close button */}
+        {/* Counter (live region so AT users hear index changes) */}
         <div
+          aria-live="polite"
+          aria-atomic="true"
+          style={{
+            position: "absolute", top: "20px", left: "20px",
+            fontSize: "11px", letterSpacing: "2px",
+            color: C.iceBlue, fontFamily: fontDisplay,
+            textTransform: "uppercase",
+            background: `${C.deepFjord}99`,
+            padding: "6px 12px",
+            border: `1px solid ${C.iceBlue}33`,
+            zIndex: 2,
+          }}
+        >
+          <SrOnly>Photo </SrOnly>
+          {lightbox.index + 1} <span aria-hidden="true">/</span><SrOnly> of </SrOnly> {lightbox.photos.length}
+        </div>
+
+        {/* Close button */}
+        <button
+          type="button"
           onClick={(e) => { e.stopPropagation(); setLightbox(null); }}
+          aria-label="Close photo viewer"
           style={{
             position: "absolute", top: "16px", right: "16px",
             width: "40px", height: "40px",
@@ -1883,32 +2130,20 @@ filter: "blur(50px)",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "20px", cursor: "pointer",
             fontFamily: fontDisplay,
+            padding: 0,
             zIndex: 2,
           }}
-          aria-label="Close"
-        >×</div>
-
-        {/* Counter */}
-        <div style={{
-          position: "absolute", top: "20px", left: "20px",
-          fontSize: "11px", letterSpacing: "2px",
-          color: C.iceBlue, fontFamily: fontDisplay,
-          textTransform: "uppercase",
-          background: `${C.deepFjord}99`,
-          padding: "6px 12px",
-          border: `1px solid ${C.iceBlue}33`,
-          zIndex: 2,
-        }}>
-          {lightbox.index + 1} / {lightbox.photos.length}
-        </div>
+        ><span aria-hidden="true">×</span></button>
 
         {/* Prev arrow */}
         {hasPrev && (
-          <div
+          <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               setLightbox({ ...lightbox, index: lightbox.index - 1 });
             }}
+            aria-label="Previous photo"
             style={{
               position: "absolute", left: "12px", top: "50%", transform: "translateY(-50%)",
               width: "44px", height: "44px", borderRadius: "50%",
@@ -1918,19 +2153,21 @@ filter: "blur(50px)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "20px", cursor: "pointer",
               fontFamily: fontDisplay,
+              padding: 0,
               zIndex: 2,
             }}
-            aria-label="Previous"
-          >‹</div>
+          ><span aria-hidden="true">‹</span></button>
         )}
 
         {/* Next arrow */}
         {hasNext && (
-          <div
+          <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               setLightbox({ ...lightbox, index: lightbox.index + 1 });
             }}
+            aria-label="Next photo"
             style={{
               position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)",
               width: "44px", height: "44px", borderRadius: "50%",
@@ -1940,14 +2177,14 @@ filter: "blur(50px)",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: "20px", cursor: "pointer",
               fontFamily: fontDisplay,
+              padding: 0,
               zIndex: 2,
             }}
-            aria-label="Next"
-          >›</div>
+          ><span aria-hidden="true">›</span></button>
         )}
 
         {/* Photo + caption */}
-        <div
+        <figure
           onClick={(e) => e.stopPropagation()}
           style={{
             maxWidth: "min(900px, 92vw)",
@@ -1957,12 +2194,13 @@ filter: "blur(50px)",
             gap: "16px",
             animation: "zoomIn 0.22s ease-out",
             cursor: "default",
+            margin: 0,
           }}
         >
           <img
             key={photo?.guid || lightbox.index}
             src={photo?.src}
-            alt={captionText}
+            alt={captionText || `Photo ${lightbox.index + 1}`}
             style={{
               maxWidth: "100%",
               maxHeight: "calc(100vh - 140px)",
@@ -1974,7 +2212,7 @@ filter: "blur(50px)",
             }}
           />
           {(captionText || photo?.locationName) && (
-            <div style={{
+            <figcaption style={{
               textAlign: "center", maxWidth: "600px",
               fontFamily: fontDisplay, fontStyle: "italic",
               fontSize: "14px", color: C.mist,
@@ -1989,12 +2227,12 @@ filter: "blur(50px)",
                   marginLeft: "8px", color: C.iceBlue, fontStyle: "normal",
                   fontSize: "11px", letterSpacing: "1px",
                 }}>
-                  📍 {photo.locationName}
+                  <span aria-hidden="true">📍 </span>{photo.locationName}
                 </span>
               )}
-            </div>
+            </figcaption>
           )}
-        </div>
+        </figure>
       </div>
     );
   })()}
