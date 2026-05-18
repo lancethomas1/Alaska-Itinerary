@@ -297,7 +297,7 @@ return (
 <span style={{
 display: "inline-flex", alignItems: "center", gap: "5px",
 padding: "2px 8px", fontSize: "10px", letterSpacing: "1.5px",
-textTransform: "uppercase", fontFamily: "'Hoefler Text', Georgia, serif",
+textTransform: "uppercase", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
 color: c, background: `${c}18`, border: `1px solid ${c}55`,
 borderRadius: "2px",
 }}>
@@ -310,7 +310,7 @@ borderRadius: "2px",
 // opens the lightbox at the first matching photo. `derived` rows are bullets
 // the photo data added (photos whose location matched no existing bullet).
 function ItineraryRow({ entry, section, C, derived, onOpenPhoto }) {
-  const fontDisplay = "'Hoefler Text', 'Didot', 'Bodoni 72', 'Times New Roman', serif";
+  const fontDisplay = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
   const photos = entry.photos || [];
   const hasPhotos = photos.length > 0;
   return (
@@ -1160,8 +1160,8 @@ const completedCount = todos.filter((t) => t.done).length;
 const totalSpent = TRIP_DATA.costs.reduce((sum, c) => sum + c.amount, 0);
 const pendingTotal = totalSpent;
 
-const fontDisplay = "'Hoefler Text', 'Didot', 'Bodoni 72', 'Times New Roman', serif";
-const fontBody = "'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif";
+const fontDisplay = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
+const fontBody = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif";
 
 return (
 <div
