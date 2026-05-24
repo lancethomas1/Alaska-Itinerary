@@ -1412,7 +1412,7 @@ filter: "blur(50px)",
             fontSize: "11px", color: C.pineSoft, cursor: "pointer", letterSpacing: "0.5px",
           }}
         >
-          <span aria-hidden="true">◈ </span>${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })} spent · ISP excursion TBD <span aria-hidden="true">{showCosts ? "▲" : "▼"}</span>
+          <span aria-hidden="true">◈ </span>${totalSpent.toLocaleString("en-US", { minimumFractionDigits: 2 })} spent <span aria-hidden="true">{showCosts ? "▲" : "▼"}</span>
         </button>
         )}
 
@@ -1440,10 +1440,6 @@ filter: "blur(50px)",
             }}>
               <span style={{ color: C.pineSoft, letterSpacing: "1px" }}>TOTAL SPENT</span>
               <span style={{ color: C.pineSoft }}>${totalSpent.toFixed(2)}</span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0 0", fontSize: "11px", fontFamily: fontDisplay }}>
-              <span style={{ color: C.gold, letterSpacing: "0.5px" }}>+ Icy Strait Point excursion (TBD)</span>
-              <span style={{ color: C.gold }}>TBD</span>
             </div>
           </div>
         )}
