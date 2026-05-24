@@ -26,8 +26,9 @@ costs: [
 { label: "Air Canada flights + bags", amount: 684.79 },
 { label: "United return flights", amount: 578.80 },
 // In-trip posted spending (from CSV)
-{ label: "MIA airport meals + Lyft", amount: 91.76 },
-{ label: "Vancouver — dining, hotel, transit, bikes", amount: 424.64 },
+{ label: "MIA airport meals + Lyft", amount: 82.55 },
+{ label: "Vancouver — Hopper hotel (2 nights)", amount: 149.39 },
+{ label: "Vancouver — dining, transit, bikes", amount: 275.25 },
 { label: "Celebrity Summit — onboard charges", amount: 225.24 },
 { label: "Ketchikan — souvenirs", amount: 5.39 },
 { label: "Sitka — dining", amount: 125.62 },
