@@ -325,19 +325,19 @@ fill={color}
 );
 }
 
-function TrailBlaze({ status }) {
-if (!status || status === "none") return null;
-const isBooked = status === "booked";
-const c = isBooked ? C.pineSoft : C.alpenglow;
+function DayWeatherChip({ weather }) {
+if (!weather || weather.hi == null || weather.lo == null) return null;
 return (
-<span style={{
+<span
+aria-label={`High ${weather.hi}°, low ${weather.lo}°`}
+style={{
 display: "inline-flex", alignItems: "center", gap: "5px",
-padding: "2px 8px", fontSize: "10px", letterSpacing: "1.5px",
-textTransform: "uppercase", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
-color: c, background: `${c}18`, border: `1px solid ${c}55`,
-borderRadius: "2px",
+fontSize: "12px", color: C.textMuted,
+fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+letterSpacing: "0.5px", flexShrink: 0, whiteSpace: "nowrap",
 }}>
-<span aria-hidden="true">{isBooked ? "✦" : "△"}</span> {isBooked ? "BOOKED" : "TODO"}
+{weather.icon && <span aria-hidden="true" style={{ fontSize: "14px" }}>{weather.icon}</span>}
+<span>{weather.hi}°/{weather.lo}°</span>
 </span>
 );
 }
@@ -1636,7 +1636,7 @@ filter: "blur(50px)",
                       <span style={{ fontFamily: fontDisplay, fontSize: "15px", color: C.snow, fontStyle: "italic" }}>
                         {day.date} · <span style={{ fontStyle: "normal" }}>{day.day}</span>
                       </span>
-                      <TrailBlaze status={day.status} />
+                      <DayWeatherChip weather={day.weather} />
                     </div>
                     <div style={{
                       fontSize: "11px", color: C.textMuted, marginTop: "3px",
