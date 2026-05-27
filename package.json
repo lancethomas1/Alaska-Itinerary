@@ -8,7 +8,8 @@
     "build": "vite build",
     "build:public": "node scripts/gen-public-trip-data.mjs && VITE_PUBLIC_MODE=1 vite build --base=/Alaska-Itinerary/s/friends-hemhb3ts/ --outDir=dist/s/friends-hemhb3ts",
     "preview": "vite preview",
-    "photos:manifest": "node scripts/build-photos-manifest.mjs"
+    "photos:manifest": "node scripts/build-photos-manifest.mjs",
+    "icons:render": "node scripts/render-icons.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -17,6 +18,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
     "exifr": "^7.1.3",
+    "sharp": "^0.34.5",
     "vite": "^5.4.10"
   }
 }

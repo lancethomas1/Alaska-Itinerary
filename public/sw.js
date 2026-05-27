@@ -9,7 +9,7 @@
 //
 // Bump CACHE_VERSION to force a fresh cache for all clients on next activate.
 
-const CACHE_VERSION = "v2";
+const CACHE_VERSION = "v3";
 const CACHE_NAME = `alaska-itinerary-${CACHE_VERSION}`;
 const SHELL_URL = new Request(self.registration.scope, { cache: "reload" });
 
