@@ -15,43 +15,53 @@ const PUBLIC_MODE = import.meta.env.VITE_PUBLIC_MODE === "1";
 // Two semantic palettes share the same token names so every `C.x` reference
 // stays valid in either theme. `midnight`/`deepFjord`/`fjord` are always
 // "background-ish", `snow` is always "primary text", etc.
+//
+// The whole UI is themed after the app's vintage National Park sticker icon:
+// a warm cream field, deep navy ink, and a retro sunset palette of gold,
+// orange, red-orange, and dusty blue. Light mode is the "sticker" itself
+// (cream paper); dark mode is that same sticker scene at night (navy field,
+// cream type).
+//
+// Icon source colors: cream #efe2b8 · snow-cap #f3e8c4 · gold #eab835 ·
+// orange #e08436 · red-orange #cd4a36 · dusty blue #79a7be · navy #1c2536.
+//
 // Contrast targets (on the section's typical background):
 //   textMuted / textDim must clear WCAG AA (≥4.5:1 for body, ≥3:1 for large)
-//   against `midnight`. Earlier values for `textDim` failed AA on dark mode.
+//   against `midnight`. Values below were checked against the new palettes.
 const DARK_PALETTE = {
-  midnight: "#08151f",
-  deepFjord: "#0e2435",
-  fjord: "#143049",
-  glacier: "#3d7993",
-  iceBlue: "#9fc4d4",
-  mist: "#d8e6ec",
-  snow: "#f1f6f9",
-  pineDeep: "#1a3025",
-  pineSoft: "#7aa68b",
-  alpenglow: "#f0a584",
-  alpenglowSoft: "#f4b89a",
-  gold: "#f0cf95",
-  stone: "#8aa0b0",
-  textMuted: "#a8c2d1",
-  textDim: "#8aa6b8",
+  midnight: "#101822",
+  deepFjord: "#18202e",
+  fjord: "#243144",
+  glacier: "#79a7be",
+  iceBlue: "#9cc4d5",
+  mist: "#e7dcc0",
+  snow: "#f3e8c4",
+  pineDeep: "#28382a",
+  pineSoft: "#9cb886",
+  alpenglow: "#e8853a",
+  alpenglowSoft: "#eeb44a",
+  gold: "#eab835",
+  stone: "#897f66",
+  textMuted: "#cdc09a",
+  textDim: "#a99b78",
 };
 
 const LIGHT_PALETTE = {
-  midnight: "#eef4f8",
-  deepFjord: "#dde8ef",
-  fjord: "#c5d6e1",
-  glacier: "#1f5670",
-  iceBlue: "#1f4a60",
-  mist: "#2d4356",
-  snow: "#0c1a26",
-  pineDeep: "#c8d9c9",
-  pineSoft: "#2f5039",
-  alpenglow: "#a04a25",
-  alpenglowSoft: "#7a3a1d",
-  gold: "#6a4f0e",
-  stone: "#3f5366",
-  textMuted: "#37516a",
-  textDim: "#4a6378",
+  midnight: "#f3e8c6",
+  deepFjord: "#ecdcb0",
+  fjord: "#e0cd99",
+  glacier: "#b5642a",
+  iceBlue: "#2b6573",
+  mist: "#33302a",
+  snow: "#1c2536",
+  pineDeep: "#3f4a2c",
+  pineSoft: "#4f6f34",
+  alpenglow: "#aa3b26",
+  alpenglowSoft: "#9a4419",
+  gold: "#8a5e0c",
+  stone: "#9c8a5e",
+  textMuted: "#4a4434",
+  textDim: "#6a5f44",
 };
 
 // Resolve initial palette synchronously so first render matches system.
@@ -64,9 +74,9 @@ function detectInitialPalette() {
 
 let activePalette = detectInitialPalette();
 
-// Per-section accent colors in trip-data.js (e.g. Denali's `#8fc99d`) are tuned
-// against the dark background. Used as TEXT on the light palette they fall
-// well below WCAG AA. `readableAccent` returns a darkened variant in light
+// Per-section accent colors in trip-data.js (e.g. Denali's `#e08436`) are
+// tuned against the dark background. Used as TEXT on the light (cream) palette
+// they fall below WCAG AA. `readableAccent` returns a darkened variant in light
 // mode for text only — borders and icons keep the raw accent.
 function readableAccent(hex) {
   if (!hex || hex[0] !== "#" || activePalette !== LIGHT_PALETTE) return hex;
@@ -228,7 +238,11 @@ function linkifyAddresses(text, linkColor) {
   return parts;
 }
 
-// ─── SVG: Layered mountain range with snow caps & alpenglow sky ───
+// ─── SVG: Retro sunset bands + navy mountain range ───
+// Mirrors the app icon's vintage National Park sticker: horizontal sunset
+// bands (gold → orange → red-orange → dusty blue) behind a flat navy
+// silhouette with cream snow caps. Fixed colors in both themes — the
+// sticker scene reads the same day or night, just like the icon.
 function MountainHeader() {
 return (
 <svg
@@ -238,60 +252,38 @@ style={{ width: "100%", height: "180px", display: "block", position: "absolute",
 aria-hidden="true"
 focusable="false"
 >
-<defs>
-<linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0%" stopColor="#0c1e2e" />
-<stop offset="55%" stopColor="#1f3a52" />
-<stop offset="85%" stopColor="#c47860" stopOpacity="0.55" />
-<stop offset="100%" stopColor="#e9b58c" stopOpacity="0.4" />
-</linearGradient>
-<linearGradient id="farPeaks" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0%" stopColor="#f4d9c2" />
-<stop offset="14%" stopColor="#d5dee5" />
-<stop offset="55%" stopColor="#6a8aa0" />
-<stop offset="100%" stopColor="#2d4a62" />
-</linearGradient>
-<linearGradient id="midPeaks" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0%" stopColor="#ffffff" />
-<stop offset="10%" stopColor="#aac3d3" />
-<stop offset="60%" stopColor="#3a5e76" />
-<stop offset="100%" stopColor="#152e42" />
-</linearGradient>
-<linearGradient id="nearPeaks" x1="0" y1="0" x2="0" y2="1">
-<stop offset="0%" stopColor="#f4f8fa" />
-<stop offset="8%" stopColor="#4f6b78" />
-<stop offset="55%" stopColor="#1f3528" />
-<stop offset="100%" stopColor="#0a1810" />
-</linearGradient>
-<radialGradient id="sun" cx="0.78" cy="0.62" r="0.18">
-<stop offset="0%" stopColor="#fde2c8" stopOpacity="0.85" />
-<stop offset="100%" stopColor="#fde2c8" stopOpacity="0" />
-</radialGradient>
-</defs>
+  {/* Retro sunset bands */}
+  <rect x="0" y="0"   width="800" height="70"  fill="#eab835" />
+  <rect x="0" y="70"  width="800" height="60"  fill="#e08436" />
+  <rect x="0" y="130" width="800" height="60"  fill="#cd4a36" />
+  <rect x="0" y="190" width="800" height="90"  fill="#79a7be" />
 
-  <rect width="800" height="280" fill="url(#sky)" />
+  {/* Soft sun glow low on the horizon */}
+  <defs>
+    <radialGradient id="sun" cx="0.74" cy="0.66" r="0.30">
+      <stop offset="0%" stopColor="#f3e8c4" stopOpacity="0.75" />
+      <stop offset="100%" stopColor="#f3e8c4" stopOpacity="0" />
+    </radialGradient>
+  </defs>
   <rect width="800" height="280" fill="url(#sun)" />
 
   {/* Bird silhouettes */}
-  <g opacity="0.55">
-    <path d="M420 95 q4 -3 8 0 q4 -3 8 0" stroke="#1a2530" strokeWidth="1.2" fill="none" />
-    <path d="M480 75 q3 -2 6 0 q3 -2 6 0" stroke="#1a2530" strokeWidth="1.1" fill="none" />
-    <path d="M310 110 q3 -2 6 0 q3 -2 6 0" stroke="#1a2530" strokeWidth="1.1" fill="none" />
+  <g opacity="0.5">
+    <path d="M420 55 q4 -3 8 0 q4 -3 8 0" stroke="#1c2536" strokeWidth="1.4" fill="none" />
+    <path d="M480 40 q3 -2 6 0 q3 -2 6 0" stroke="#1c2536" strokeWidth="1.2" fill="none" />
+    <path d="M310 62 q3 -2 6 0 q3 -2 6 0" stroke="#1c2536" strokeWidth="1.2" fill="none" />
   </g>
 
+  {/* Flat navy mountain silhouette */}
   <path
-    d="M0,280 L0,165 L55,125 L110,150 L165,95 L220,135 L280,80 L335,120 L395,70 L455,115 L515,90 L580,130 L640,100 L705,125 L760,90 L800,110 L800,280 Z"
-    fill="url(#farPeaks)"
+    d="M0,280 L0,205 L48,170 L96,192 L150,140 L210,178 L270,120 L335,162 L395,108 L455,150 L515,118 L580,156 L640,112 L705,150 L760,120 L800,142 L800,280 Z"
+    fill="#1c2536"
   />
-  <path
-    d="M0,280 L0,200 L45,160 L95,185 L150,135 L210,175 L270,125 L335,165 L395,140 L460,175 L525,150 L595,180 L660,155 L725,180 L800,165 L800,280 Z"
-    fill="url(#midPeaks)"
-  />
-  <path
-    d="M0,280 L0,230 L40,205 L90,225 L150,195 L215,220 L280,190 L340,215 L410,190 L475,220 L545,195 L615,225 L680,205 L745,225 L800,215 L800,280 Z"
-    fill="url(#nearPeaks)"
-  />
-  <rect y="200" width="800" height="30" fill="#aec5d2" opacity="0.08" />
+
+  {/* Cream snow caps on the tallest peaks */}
+  <path d="M255,134 L270,120 L285,134 L274,140 L262,132 Z" fill="#f3e8c4" />
+  <path d="M381,121 L395,108 L410,121 L398,128 L387,119 Z" fill="#f3e8c4" />
+  <path d="M627,124 L640,112 L654,124 L643,130 L632,122 Z" fill="#f3e8c4" />
 </svg>
 
 );
@@ -1356,19 +1348,31 @@ filter: "blur(50px)",
         </div>
         <h1 style={{
           fontFamily: fontDisplay,
-          fontSize: "clamp(34px, 9vw, 52px)",
-          fontWeight: "normal",
-          margin: "0 0 6px",
-          letterSpacing: "-0.5px",
+          fontSize: "clamp(38px, 11vw, 60px)",
+          fontWeight: 900,
+          margin: "0 0 8px",
+          letterSpacing: "3px",
           lineHeight: 1.0,
           color: C.snow,
-          fontStyle: "italic",
+          textTransform: "uppercase",
         }}>
           Alaska
         </h1>
+        {/* Retro sunset rule echoing the icon's banded arch */}
+        <div aria-hidden="true" style={{
+          display: "flex", justifyContent: "center", gap: 0,
+          width: "132px", height: "5px", margin: "0 auto",
+          borderRadius: "3px", overflow: "hidden",
+          border: `1px solid ${C.snow}22`,
+        }}>
+          <span style={{ flex: 1, background: "#eab835" }} />
+          <span style={{ flex: 1, background: "#e08436" }} />
+          <span style={{ flex: 1, background: "#cd4a36" }} />
+          <span style={{ flex: 1, background: "#79a7be" }} />
+        </div>
         <div style={{
           fontSize: "11px", letterSpacing: "8px", color: C.iceBlue,
-          textTransform: "uppercase", marginTop: "4px",
+          textTransform: "uppercase", marginTop: "10px",
           fontFamily: fontDisplay,
         }}>
           MMXXVI
@@ -1459,7 +1463,9 @@ filter: "blur(50px)",
               style={{
                 flex: 1, padding: "16px 8px", cursor: "pointer",
                 background: active ? `linear-gradient(180deg, ${s.color}ee 0%, ${s.color}aa 100%)` : `${C.deepFjord}aa`,
-                color: active ? C.snow : C.textDim,
+                // Section colors are always dark surfaces, so keep the active
+                // label cream in both themes (snow is navy in light mode).
+                color: active ? "#f3e8c4" : C.textDim,
                 fontFamily: fontDisplay, fontSize: "13px",
                 letterSpacing: "1px", textTransform: "uppercase",
                 border: active ? `1px solid ${s.accent}` : `1px solid ${C.stone}22`,
@@ -1901,7 +1907,7 @@ filter: "blur(50px)",
                   <span aria-hidden="true" style={{ fontSize: "20px" }}>{sec.emoji}</span>
                   <div style={{ flex: 1 }}>
                     <h2 id={headingId} style={{
-                      fontFamily: fontDisplay, fontSize: "15px", color: "#f1f6f9",
+                      fontFamily: fontDisplay, fontSize: "15px", color: "#f3e8c4",
                       fontStyle: "italic", letterSpacing: "0.5px",
                       margin: 0, fontWeight: "normal",
                     }}>
