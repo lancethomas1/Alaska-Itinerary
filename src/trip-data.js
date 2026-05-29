@@ -51,8 +51,8 @@ emoji: "🚢",
 title: "Celebrity Summit",
 subtitle: "Alaska Inside Passage",
 dates: "May 6–15, 2026",
-color: "#1d3d52",
-accent: "#6fb5cf",
+color: "#26535f",
+accent: "#79a7be",
 days: [
 {
 date: "May 6",
@@ -216,8 +216,8 @@ emoji: "🦌",
 title: "Denali",
 subtitle: "The Great One",
 dates: "May 15–17, 2026",
-color: "#2a4a35",
-accent: "#8fc99d",
+color: "#8a4423",
+accent: "#e08436",
 days: [
 {
 date: "May 15",
